@@ -1,26 +1,53 @@
 ---
-title: "firstQuarto"
+title: Analytics Report Shell
+author: 
+  - name: Zachary Vandecar
+    email: zachary.vandecar@snhu
+    affiliations: 
+      - name: Southern New Hampshire University
 format: html
-editor: visual
+date: 9/15/2024
+date-modified: today
+date-format: long
+theme: flatly
+toc: true
 ---
 
 # Quarto
 
-change thing thing 
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1 +1 +1
+
+library(tidyverse)
+library(dplyr)
+
+
+hits <- read.csv("https://raw.githubusercontent.com/agmath/agmath.github.io/refs/heads/master/data/classification/battedballs.csv")
+
+parks <- read.csv("https://raw.githubusercontent.com/agmath/agmath.github.io/refs/heads/master/data/classification/park_dimensions.csv")
+
+
+hits |> head()
+
+parks %>% head()
+
+
+
+
+
+
+
+
+
 ```
 
-You can add options to executable code like this
 
+## joining data
 ```{r}
-#| echo: false
-2 * 2
+
+joined_hits <- hits %>% left_join(parks, by = c("park"="park") )
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+
+
+
