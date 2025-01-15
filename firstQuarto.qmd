@@ -163,7 +163,7 @@ trainD %>%
 
 ```
 
-### group summaries
+#### group summaries
 
 ```{r}
 
@@ -178,6 +178,80 @@ trainD %>%
             max_angle = max(launch_angle),
             sd_angle = sd(launch_angle)
   )
+
+```
+### ***Data Visualization***
+
+```{r}
+
+#themes can be found online....this one is black and white and adjusts font sizes automatically
+
+theme_set(theme_bw(base_size = 14))
+
+
+
+
+```
+
+
+
+
+
+Plot the distribution of home-runs versus non-home-runs (is_home_run)
+```{r}
+
+trainD %>%
+  ggplot() + 
+  geom_bar(aes(x=is_home_run)) + 
+  labs(x="is_home_run")
+
+
+
+
+
+```
+
+
+
+Plot the distribution of pitch_mph
+
+```{r}
+
+trainD %>% 
+  ggplot() +
+  geom_histogram(aes(x=pitch_mph,y = after_stat(density)), bins = 40, ) + 
+  geom_density(aes(x = pitch_mph))
+
+
+
+`````````
+
+
+Plot the distribution of launch_speed
+
+```{r}
+
+```
+
+Plot the distribution of launch_angle
+
+```{r}
+
+```
+
+
+plot number of homeruns per stadium 
+
+```{r}
+
+
+#doesnt ever need y, because it is counting how many of each class given there are
+trainD %>% 
+  filter(is_home_run == 1) %>% 
+  ggplot() +
+  geom_bar(aes(x=NAME))
+
+
 
 ```
 
