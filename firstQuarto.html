@@ -83,7 +83,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#quarto" id="toc-quarto" class="nav-link active" data-scroll-target="#quarto">Quarto</a>
   <ul class="collapse">
-  <li><a href="#running-code" id="toc-running-code" class="nav-link" data-scroll-target="#running-code">Running Code</a></li>
+  <li><a href="#joining-data" id="toc-joining-data" class="nav-link" data-scroll-target="#joining-data">joining data</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -123,7 +123,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">January 8, 2025</p>
+      <p class="date-modified">January 13, 2025</p>
     </div>
   </div>
     
@@ -136,23 +136,75 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="quarto" class="level1">
 <h1>Quarto</h1>
-<p>change thing thing</p>
-<section id="running-code" class="level2">
-<h2 class="anchored" data-anchor-id="running-code">Running Code</h2>
-<p>When you click the <strong>Render</strong> button a document will be generated that includes both content and the output of embedded code. You can embed code like this:</p>
+<p>these work within individual chunks or in the header #| message: false #does not display output to code in report #| echo: false #does not display code in report, but does run #| code-fold: true #makes the code a dropdown</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span><span class="dv">1</span> <span class="sc">+</span><span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 4</code></pre>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#library(dplyr)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>hits <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"https://raw.githubusercontent.com/agmath/agmath.github.io/refs/heads/master/data/classification/battedballs.csv"</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>parks <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"https://raw.githubusercontent.com/agmath/agmath.github.io/refs/heads/master/data/classification/park_dimensions.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
-</div>
-<p>You can add options to executable code like this</p>
+<section id="joining-data" class="level2">
+<h2 class="anchored" data-anchor-id="joining-data">joining data</h2>
 <div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>hits <span class="sc">|&gt;</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 4</code></pre>
+<pre><code>  bip_id  game_date home_team away_team batter_team       batter_name
+1  61093 2020-09-11        TB       BOS         BOS  bogaerts, xander
+2 117924 2020-08-31       CIN       STL         STL      edman, tommy
+3  84178 2020-09-12       WSH       ATL         WSH        soto, juan
+4  25265 2020-09-04       CLE       MIL         CLE lindor, francisco
+5 117768 2020-08-25       STL        KC         STL      wong, kolten
+6  54097 2020-08-23       STL       CIN         CIN       ervin, phil
+       pitcher_name batter_id pitcher_id is_batter_lefty is_pitcher_lefty
+1      snell, blake    593428     605483               0                1
+2 lorenzen, michael    669242     547179               1                0
+3     anderson, ian    665742     666120               1                0
+4    burnes, corbin    596019     669203               1                0
+5    newberry, jake    543939     623470               1                0
+6       reyes, alex    640447     621052               0                0
+      bb_type bearing      pitch_name park inning outs_when_up balls strikes
+1 ground_ball  center        Changeup   26      3            2     2       2
+2 ground_ball  center        Changeup    5      8            1     0       1
+3 ground_ball  center        Changeup   29      3            2     1       1
+4 ground_ball    left        Changeup    6      4            1     2       2
+5  line_drive  center          Slider   25      4            2     0       2
+6    fly_ball    left 4-Seam Fastball   25      9            0     0       1
+  plate_x plate_z pitch_mph launch_speed launch_angle is_home_run
+1    1.65    2.83      89.5         58.5          -47           0
+2   -0.97    1.82      86.4           NA           -8           0
+3   -0.74    2.35      89.7         71.9           NA           0
+4   -0.72    1.65      89.7         71.5           10           0
+5   -0.12    2.16      82.2         97.2           23           0
+6   -0.35    3.46      97.4           NA           54           0</code></pre>
 </div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>parks <span class="sc">%&gt;%</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  park                        NAME   Cover LF_Dim CF_Dim RF_Dim LF_W CF_W RF_W
+1    0                 Chase Field    Roof    328    407    335    8   25    8
+2    1               SunTrust Park Outdoor    335    400    325    6    8   16
+3    2 Oriole Park at Camden Yards Outdoor    333    400    318    7    7   21
+4    3                 Fenway Park Outdoor    310    390    302   37    9    3
+5    4               Wrigley Field Outdoor    355    400    353   16   11   16
+6    5     Great American Ballpark Outdoor    328    404    325   12    8    8</code></pre>
 </div>
-<p>The <code>echo: false</code> option disables the printing of code (only output is displayed).</p>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>joined_hits <span class="ot">&lt;-</span> hits <span class="sc">%&gt;%</span> <span class="fu">left_join</span>(parks, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"park"</span><span class="ot">=</span><span class="st">"park"</span>) )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>we joined <code>hits</code> and <code>parks</code> data together for a dataset with 13000 rows and 33</p>
 </section>
 </section>
 

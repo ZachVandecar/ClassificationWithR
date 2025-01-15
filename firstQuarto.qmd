@@ -11,28 +11,37 @@ date-modified: today
 date-format: long
 theme: flatly
 toc: true
+code-fold: true
 ---
 
 # Quarto
 
+
+
+
+
+these work within individual chunks or in the header
+"#| message: false" #does not display output to code in report
+"#| echo: false"  #does not display code in report, but does run
+"#| code-fold: true" #makes the code a dropdown
+
+
+
 ```{r}
+#| message: false
+
+
 
 library(tidyverse)
+library(tidymodels)
 library(dplyr)
-
+library(skimr)
+library(ggplot2)
+library(patchwork)
 
 hits <- read.csv("https://raw.githubusercontent.com/agmath/agmath.github.io/refs/heads/master/data/classification/battedballs.csv")
 
 parks <- read.csv("https://raw.githubusercontent.com/agmath/agmath.github.io/refs/heads/master/data/classification/park_dimensions.csv")
-
-
-hits |> head()
-
-parks %>% head()
-
-
-
-
 
 
 
@@ -46,8 +55,130 @@ parks %>% head()
 
 joined_hits <- hits %>% left_join(parks, by = c("park"="park") )
 
+
+```
+we joined `hits` and `parks` data together for a dataset with `r nrow(joined_hits)` rows and `r ncol(joined_hits)` columns
+
+
+## splitting into training and testing data
+
+
+```{r}
+
+
+set.seed(434)
+ 
+#marks the data basically
+data_splits <- initial_split(joined_hits, 0.85, strata = is_home_run ) #USE STRATA TO SPLIT A VARIABLES VALUES PROPORTIONALLY
+#can put list in for multiple strata. 
+#more stratified, less random, losing some potential patterns 
+#that line tries to make sure that is_home_run is split proportionally 
+
+
+#these are actually making datasets out of the markings
+testD <- testing(data_splits) 
+trainD <- training(data_splits)
+
+
+
+
+
 ```
 
 
+## exploratory data analysis
+
+
+### data poking (head, glimpse, skim)
+```{r}
+
+hits |> head(10)
+
+parks %>% head(3)
+
+joined_hits %>% head()
+
+joined_hits %>%  glimpse()
+
+joined_hits %>% skim()
+
+
+```
+
+
+### filter and select
+
+```{r}
+
+trainD %>% filter(is_home_run == 1)
+
+trainD %>% filter(launch_angle > 45 & is_home_run)
+
+trainD %>% filter(launch_angle > 45 & is_home_run) %>% select(launch_angle, launch_speed)
+
+
+```
+
+### building new variables from old ones....."Feature Engineering"
+
+```{r}
+
+trainD %>%
+  mutate(fast_pitch = ifelse(pitch_mph > 100, "yes", "no") ) #flagging a row as true if the pitch_speed is greater than 100
+#so, to be clear, it adds a new column that is either yes or no 
+
+
+#can use step mutate when making a model 
+
+
+```
+### getting summary statistics
+
+```{r}
+
+trainD %>% 
+  count(is_home_run) %>% 
+  mutate(prop = n /sum(n))
+
+
+
+```
+
+
+### summaries
+```{r}
+
+trainD %>% 
+  filter(!is.na(launch_angle))  %>%         #! -> negation....not
+  summarize(pct_hr = mean(is_home_run),
+            min_angle = min(launch_angle),
+            mean_angle = mean(launch_angle),
+            median_angle = median(launch_angle),
+            max_angle = max(launch_angle),
+            sd_angle = sd(launch_angle)
+  )
+  
+
+
+
+```
+
+### group summaries
+
+```{r}
+
+
+trainD %>% 
+  group_by(is_home_run) %>% 
+  filter(!is.na(launch_angle))  %>%         #! -> negation....not
+  summarize(pct_hr = mean(is_home_run),
+            min_angle = min(launch_angle),
+            mean_angle = mean(launch_angle),
+            median_angle = median(launch_angle),
+            max_angle = max(launch_angle),
+            sd_angle = sd(launch_angle)
+  )
+
+```
 
 
