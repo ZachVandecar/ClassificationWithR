@@ -1,0 +1,348 @@
+---
+title: MAT434 Zillow Classification Challenge 
+author: 
+  - name: Zachary Vandecar
+    email: zachary.vandecar@snhu.edu
+    affiliations: 
+      - name: Southern New Hampshire University
+format: 
+  html: default
+  pdf: default
+date: today
+date-format: long
+theme: flatly
+toc: true
+code-fold: true
+---
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(tidymodels)
+library(patchwork)
+library(kableExtra)
+library(ggplot2)
+library(purrr) #saved me work making plots over and over
+
+options(kable_styling_bootstrap_options = c("hover", "striped"))
+
+theme_set(theme_bw(base_size = 14))
+
+raw_data <- read_csv("data.csv")
+
+names(raw_data) <- janitor::make_clean_names(names(raw_data))
+
+
+set.seed(22)
+data_splits <- initial_split(raw_data, prop = 0.85)
+
+train <- training(data_splits)
+test <- testing(data_splits)
+
+
+# cross-validation folds 
+set.seed(22)
+train_folds <- vfold_cv(train, v = 10)
+```
+
+## Statement of Purpose
+
+This project aims to predict the listed price range for a property listed on Zillow based on information about the property. The predictions will be obtained using statistical learning and machine learning techniques by training on a dataset of Zillow listings. The final result may be of interest to Zillow or competing brands because it will allow for accurate price predictions of newly listed properties. 
+
+
+## Executive Summary
+
+## Introduction
+
+## Exploratory Data Analysis
+
+
+```{r}
+train %>%
+  head(10) %>%
+  kable() %>%
+  kable_styling()
+```
+
+First impressions: 
+
+"id" is very likely unique and so is meaningless for predictions. The range is 0-7500 and there are 7498 data entries from the raw data.  
+
+The home_type could function as a category for use as a dummy variable. I should check to see how many categories there actually are, and that they are formatted the same so that a string comparison will work. 
+
+I should do the same things for city. Intuitively, city will surely affect price, so I should make sure this data is usable. 
+
+"garage_spaces" is numeric with range 0-22. Before seeing the range, I would have said maybe it would be better as a factor, but that's a large range. I should see the distribution. It should be a helpful predictor, though I should make sure the rare high values aren't causing anything weird. 
+
+The "year_built" may be a helpful predictor, though I'm not sure if pure numeric is the right approach there. Range is 1900-2020. Certainly it cannot be used as categorical as it is now, but the difference between a house built in 1990 vs 1991 may be insignificant. And years don't simply indicate things based on their numeric value. They work more as a category than a numeric value when we figure out how much a house is worth. Maybe houses built in a single specific year are worth less. Treating the year as a numeric value doesn't seem like that will be treated correctly. Creating ranges might help maybe? Creating categories basically? Maybe the math does this work for me already though. 
+
+Description is immediately going to be tricky to squeeze any worth out of, and there very possibly is no worth in there at all. I'd have to do some like NLP sentiment analysis or specific keyword searching to get anywhere there. It probably wouldn't be worth it, but it might be cool to try if I have time. 
+
+
+Now, latitude and longitude are really interesting. They are connected values but are separate (which is fine). But I'm really not sure if either are influential. Perhaps they could imply that warmer climates are more....desirable? Certainly proximity to cities makes houses more expensive, so this will do some double dipping with city. Using an interaction step between lat and long would be great potentially. It would be great if that would totally replace the city column with something better and more precise. 
+
+
+
+
+The rest of the values are numeric and seem like they will perform fine as they are. 
+
+
+### "home_type" and "garage_spaces" value distributions
+```{r}
+#check home_type entries and rarity
+#check garage_spaces entries and rarity
+
+table(train$home_type)
+
+table(train$garage_spaces)
+
+
+
+
+
+
+```
+So, for "home_type", There are 5,978 "Single Family" entries, and then 8 categories for the remaining 395 entries. The small amount of entries per category relative to the dataset might mean this predictor will not be helpful. Special care must be taken for the cross validation splits in order to make use of many (probably 6) of these categories. 
+
+For "garage_spaces", there are entries for 0-10, 12 and 22. There is a single entry for 22 garages, making it certainly an outlier. There are only 15 entries that have 7,8,9,19, or 12 garages. Or, there are only 16 entries that have more than 6 garages. Having 5 categories for only 16 entries seems silly. 
+
+For both of those though, I think the step_other solves it automatically by grouping rare categories into an other...but that's only for categories I think (so it'd work automatically for home_type but not garage_spaces). Garage_spaces used numerically will just work, but maybe it would work better if I manually made categories.
+
+
+
+### Predicter Distributions Visualizations
+
+```{r}
+
+
+p1 <- ggplot(train, aes(x = city)) +
+  geom_bar() +
+  labs(title = "Frequency of Cities",
+       x = "City",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+p2 <- ggplot(train, aes(x = home_type)) +
+  geom_bar() +
+  labs(title = "Frequency of home_types",
+       x = "home_type",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+
+p3 <-ggplot(train, aes(x = garage_spaces)) +
+  geom_bar() +
+  labs(title = "Frequency of garage_spaces",
+       x = "garage_spaces",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+p4 <- ggplot(train, aes(x = has_spa)) +
+  geom_bar() +
+  labs(title = "Frequency of has_spa",
+       x = "has_spa",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+p5 <- ggplot(train, aes(x = year_built)) +
+  geom_bar() +
+  labs(title = "Frequency of year_built",
+       x = "year_built",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+
+p6 <- ggplot(train, aes(x = num_of_patio_and_porch_features)) +
+  geom_bar() +
+  labs(title = "Frequency of num_of_patio_and_porch_features",
+       x = "num_of_patio_and_porch_features",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+
+#sq feet isnt graphable this way
+
+
+
+p8 <- ggplot(train, aes(x = avg_school_rating)) +
+  geom_bar() +
+  labs(title = "Frequency of avg_school_rating",
+       x = "avg_school_rating",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+
+
+
+
+
+p9 <- ggplot(train, aes(x = median_students_per_teacher)) +
+  geom_bar() +
+  labs(title = "Frequency of median_students_per_teacher",
+       x = "median_students_per_teacher",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+
+
+
+
+p10 <- ggplot(train, aes(x = num_of_bathrooms)) +
+  geom_bar() +
+  labs(title = "Frequency of num_of_bathrooms",
+       x = "num_of_bathrooms",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+
+
+p11 <- ggplot(train, aes(x = num_of_bedrooms)) +
+  geom_bar() +
+  labs(title = "Frequency of num_of_bedrooms",
+       x = "num_of_bedrooms",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+
+
+p12 <- ggplot(train, aes(x = price_range)) +
+  geom_bar() +
+  labs(title = "Frequency of price_range",
+       x = "price_range",
+       y = "# of Entries") +
+  theme_minimal()
+
+
+
+p1
+
+p2
+
+p3 + p6 
+
+p4 + p5
+
+p8 + p9 
+
+p10 + p11 
+
+p12
+
+
+```
+
+So, just looking at the distributions, the city and home_type columns are a bit worrying because they have overwhelming majority in a single category. It may imply that there isn't much to learn for certain from these columns. 
+
+The has_spa, garage_spaces, num_of_patio_and_porch_features, num_of_bathrooms, and num_of_bedrooms columns all have the strong presence of outliers (which is not unexpected). I just need to be careful with these, but they should be fine. 
+
+The rest of the potential predictors look healthy. The distribution of price_ranges is especially healthy which is good to see.
+
+
+### Graphing Potential Predictors to Price_Range
+
+```{r}
+
+
+
+potential_numeric_predictors <- c("latitude","longitude","garage_spaces","year_built","num_of_patio_and_porch_features","avg_school_rating","median_students_per_teacher","num_of_bathrooms","num_of_bedrooms")
+
+
+# Create boxplots for each numeric predictor...the purrr library made it easier
+plot_list <- map(potential_numeric_predictors, function(var) {
+  ggplot(train, aes(x = price_range, y = .data[[var]])) +
+    geom_boxplot(fill = "steelblue", alpha = 0.6, outlier.color = "red") +
+    labs(title = paste("Boxplot of", var, "by Price Range"), x = "Price Range", y = var) +
+    theme_minimal()
+})
+
+print(plot_list)
+
+
+
+#doing a log scale so resuls are visible
+ggplot(train, aes(x = price_range, y = log10(lot_size_sq_ft))) +
+  geom_boxplot(fill = "steelblue", alpha = 0.6, outlier.color = "red") +
+  labs(title = "Log-Transformed Lot Size by Price Range", 
+       x = "Price Range", 
+       y = "Log(lot_size_sq_ft)") +
+  theme_minimal()
+
+
+
+
+```
+
+
+I will look in more detail later, but for now:
+
+
+It looks like latitude increases as price range increases. 
+
+It looks like longitude decreases as price range increases.
+
+Garage_spaces seem to increase as price range increases. 
+
+So far: there doesnt seems to be a noticeable difference in predictors between the two highest price_range categories.  (call this pattern 1)
+
+Not a significant or visible pattern for year_built. Makes sense to me. I bet years are predictive, but not as numerical values.  Pattern 1 still holds. 
+
+The median doesn't noticeably change for the number of patio/porch features, but the upper range increases as price range increases. Expensive houses dont need a bunch of patio/porch features, but if there are a bunch of patio/porch features then it's probably expensive. Pattern 1 still holds. 
+
+Clear increase of price range as average school rating increases. pattern 1 still holds. 
+
+semi clear increase of mediam students per teacher as price range increases. the two lowest categories are very similar. Pattern 1 still holds.
+
+for number of bathrooms, it doesnt seem to make a difference between the 3 lowest price ranges (call this pattern 2). Then it jumps up for the last two ranges. Pattern 1 is close but not really here. It looks like the number of bathrooms will be a prime difference between the highest 2 price ranges. 
+
+
+For the number of bedrooms, we see the same pattern 2. Then we see a pattern 1 as well. There is an increase in the number of bedrooms as price range increases eventually.
+
+The lot size was not interpretable without a log transformation. Even with the transformation though, the range of lot sizes is vast and inconsistent with price ranges (which is surprising honestly). There is a slight increase in median lot size as price range increases, but it may not be significant. This predictor intuitively seems important. Perhaps it will pair well within an interaction somehow. 
+
+
+Pattern 1 - that there is barely a difference between the predictor within the highest two price ranges
+
+Pattern 2- that there is barely a difference between the predictor within the lowest three price ranges
+
+
+All are still promising predictors except for year_built and maybe lot size. Intuitively, I think there is value within them. I have suspicions and hope that with some interactions or data manipulation, that these two predictors may become valuable. 
+
+
+
+
+
+
+
+
+## Model Construction
+
+### Model Construction without Cross Validation (Statistical Learning / Interpretation Focused)
+
+
+
+
+
+
+### Model Construction with Cross Validation (Machine Learning / Predictive Performance Focused)
+
+
+
+
+## Conclusion
+
+
+## References
+
