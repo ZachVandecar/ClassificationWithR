@@ -752,9 +752,9 @@ But so, now for improvements, we look at good combos and zoom in?
 
 #didnt finish running
 logReg_seq_tune_results <- logReg_tune_wf %>% 
-  tune_bayes(
+  tune_bayes(  #basically optimizing further
     resamples = train_folds, 
-    iter = 20, #walking around the space 
+    iter = 20, #walking around the space for 20 steps...stops if 10 steps sucks
     metrics = metric_set(recall), #really prioritize one metric here....walk in the direction of the metric we care about 
     initial = Logreg_tune_results #our previous results...start from there...if its a number x, itll do the x space filling points
   )
@@ -770,7 +770,18 @@ logReg_seq_tune_results %>%
 
 ```
 
+## Support Vector machine
 
+linear algebra to fit a line/plane/hyperplane to a set of data. on one side, one category, on the the other, the other category. 
+
+```{r}
+
+
+
+#try to get a svm model running
+
+
+```
 
 
 ## Model Interpretation and Inference
