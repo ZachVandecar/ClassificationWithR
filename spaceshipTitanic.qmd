@@ -442,7 +442,7 @@ logReg_fit %>%
 
 ```
 
-```{r}
+```{r, eval = FALSE}
 
 
 new_data <- crossing(
