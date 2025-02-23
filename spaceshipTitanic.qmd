@@ -656,6 +656,9 @@ need to scale numeric predictors so that nothing is artificially "expensive" or 
 
 
 ```{r}
+
+set.seed(22)
+
 logReg_tune_spec <- logistic_reg(penalty = tune(), mixture = tune() ) %>% 
   set_engine("glmnet") %>%  #used because it has the penalty and mixture hyperparams
   set_mode("classification")
@@ -750,7 +753,6 @@ But so, now for improvements, we look at good combos and zoom in?
 
 ```{r}
 
-#didnt finish running
 logReg_seq_tune_results <- logReg_tune_wf %>% 
   tune_bayes(  #basically optimizing further
     resamples = train_folds, 
@@ -774,19 +776,101 @@ logReg_seq_tune_results %>%
 
 linear algebra to fit a line/plane/hyperplane to a set of data. on one side, one category, on the the other, the other category. 
 
-```{r}
+```{r svm_tuning, cache=TRUE}
+
+library(doParallel)
 
 
 
-#try to get a svm model running
+# Detect available cores and register them
+num_cores <- parallel::detectCores(logical = FALSE)  # Get physical cores
+cl <- makeCluster(num_cores)
+registerDoParallel(cl)  # Enable parallel processing
+
+set.seed(22)
+svm_rbf_spec <- svm_rbf(mode = "classification", engine = "kernlab", cost = tune(), rbf_sigma = tune() )
+
+
+#copied from before mostly
+#step_range to scale things between 0 and 1
+svm_rbf_rec <- recipe(transported ~ ., data = train) %>% 
+  step_rm(passenger_id) %>% 
+  step_rm(name) %>% 
+  step_mutate(deck = as.factor( substr(cabin, 1, 1) ) ) %>%  #change add column based on cabin to get deck
+  step_rm(cabin) %>% 
+  step_impute_median(all_numeric_predictors()) %>%  #median is more resistant to outliers than mean....better measurement of "center"
+  step_impute_mode(all_nominal_predictors()) %>%  #most common category
+  step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_numeric_predictors()) #converting to standard deviations above and below mean....alternative is step_range
+
+
+svm_rbf_wf <- workflow() %>% 
+  add_model(svm_rbf_spec) %>% 
+  add_recipe(svm_rbf_rec)
+
+
+
+#now to tune
+
+
+
+
+
+#fill over 25  equally spaced points
+
+svm_rbf_results <- svm_rbf_wf %>% 
+  tune_grid(
+    resamples = train_folds,
+    grid = 25,
+    metrics = metric_set(recall) #the metrics we care about
+    )
+
+
+svm_rbf_results %>% 
+  show_best(n = 20, metric = "recall")
+
+
+
+#now to zoom in and optimize
+
+
+svm_rbf_optimize <- svm_rbf_wf %>% 
+  tune_bayes(  #basically optimizing further
+    resamples = train_folds, 
+    iter = 20, #walking around the space for 20 steps...stops if 10 steps sucks
+    metrics = metric_set(recall), #really prioritize one metric here....walk in the direction of the metric we care about 
+    initial = svm_rbf_results, #our previous results...start from there...if its a number x, itll do the x space filling points
+    control = control_bayes(no_improve = 10) # Adjust step size
+  )
+
+
+
+
+
+
+svm_rbf_optimize %>% 
+  show_best(n=20, metric = "recall")
+
+
+
+
+
+# Stop the parallel backend when done
+stopCluster(cl)
+registerDoSEQ()  # Reset to sequential processing
 
 
 ```
 
 
+
+
 ## Model Interpretation and Inference
 
 ## Conclusion
+ 
+
+Tuning the SVM resulted in around a 1% increase in recall performance than the tuned logistic regression model. This is small but significant, and the SVM should likely chosen over the logistic regression. The metrics here use cross validation and should be resistant to over-fitting so they should be trustworthy. If the patterns that created this dataset continue to exist, then the SVM model should accurately predict whether a passenger might be transported to another dimension or not. 
 
 ## References
 

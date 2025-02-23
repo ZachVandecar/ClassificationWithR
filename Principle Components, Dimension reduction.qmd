@@ -1,0 +1,157 @@
+---
+title: "Principle Components, Dimension reduction"
+format: html
+editor: visual
+---
+
+
+```{r}
+library(tidyverse)
+library (tidymodels)
+library(ggforce)
+
+
+rawData <- read_csv("https://raw.githubusercontent.com/agmath/agmath.github.io/master/data/classification/cancer_gene_expression_data.csv")
+#red text is just info not warning. 
+#2502 columns, 801 rows
+#3 times more columns than rows...coef. based data fitting is hopeless
+
+set.seed(22)
+
+data_splits <- initial_split(rawData, prop = 0.8)
+
+train <- training(data_splits)
+test <- testing(data_splits)
+
+
+train %>% 
+  count(labels)
+#labels is a column, it says what kind of cancer. This is what we are trying to predict
+
+
+
+```
+
+
+## Data exploration
+
+
+```{r}
+
+train %>%
+  select(1:5, 2502) %>%  #selecting first 5 genes (meaninglessly)
+    ggplot(aes(x = .panel_x, y = .panel_y, color = labels, fill = labels)) +    #color by label (cancer type)
+    geom_point() +
+    geom_autodensity(alpha = .3) +
+    facet_matrix(vars(-labels), layer.diag = 2) + 
+    scale_color_brewer(palette = "Dark2") + 
+    scale_fill_brewer(palette = "Dark2")
+
+
+
+```
+
+
+We are dealing with high dimensional data
+
+https://agmath.github.io/ClassificationCourse/Day10b_PrincipalComponentAnalysis_Intro.html
+
+changing basis vectors to more efficiently represent data
+
+higher dimensions push data apart naturally...more where data can be
+
+goal with principle components is to push data closer together. strongly determined decision boundaries
+
+combining columns to get new axes...new axes are linear combinations of multiple columns
+
+instead of moving up along one column and then up along the other columns, move up along both of them at once (thats a direction to move that combines both of them)
+
+rotating, or transforming a set of axes so that only one axis (or less axes) determines the separation
+
+
+
+
+not building model, but doing the 
+### PCA (principle components analysis)
+```{r}
+
+
+
+pca_rec <- recipe(labels ~ ., data = train) %>% 
+  step_normalize(all_numeric_predictors()) %>%    #normalize is the z-score one, range is the 0-1
+  step_pca(all_numeric_predictors()) #pcs deals with numeric predictors only ..... the columns you want to reduce
+  
+
+
+#recipe is a "recipe" to process data....doesn't *do* anything, but tells us how we process data
+
+
+pca_rec %>% 
+  prep() %>%   #can use different data here, but will assume the data in the recipe...will 
+  tidy(number = 2, type = "variance")  #take results and turn it to data frame.....step 2 is the pca one above
+
+#gave us a warning of columns with zero variance...zero variance means its not gonna help us predict
+#z-score...divide by standard dev....cant divide by zero
+
+
+pca_rec <- recipe(labels ~ ., data = train) %>% 
+  step_zv(all_predictors()) %>% #checks to see if all rows are the same 
+  step_normalize(all_numeric_predictors()) %>%    #normalize is the z-score one, range is the 0-1
+  step_pca(all_numeric_predictors()) #pcs deals with numeric predictors only ..... the columns you want to reduce
+  
+
+pca_rec %>% 
+  prep() %>%   
+  tidy(number = 3, type = "variance") %>% 
+#the number here, is looking at what happens to the data up to and including that step...2 means what do steps 1 and 2 do to the data
+  filter(terms == "percent variance") %>% 
+#variance alone, is not helpful becuz we do not know the max varaince....meaningless values....percent variance is out of 100
+  mutate(total_variance = cumsum(value))
+#chooses best eigenvalue frist, so its in order alr....total variance is going in order of best...no redundancy cuz orthoganl
+```
+```{r}
+
+
+pca_rec <- recipe(labels ~ ., data = train) %>% 
+  step_zv(all_predictors()) %>% 
+  step_normalize(all_numeric_predictors()) %>%    
+  step_pca(all_numeric_predictors(), num_comp = 5) #choosing 5 principle comps
+  
+
+pca_rec %>% 
+  prep() %>%   
+  tidy(number = 3, type = "variance") %>% 
+  filter(terms == "percent variance") %>% 
+  mutate(total_variance = cumsum(value))
+
+
+pca_rec %>% 
+prep() %>% 
+  bake(train) #transform train data using the recipe
+
+#converts the 2502 colums into the 640 principle components instead
+#these 640 components represent all variance in all the data....but 640 components 
+
+```
+
+
+
+```{r}
+
+
+train %>%
+    ggplot(aes(x = .panel_x, y = .panel_y, color = labels, fill = labels)) +    
+    geom_point() +
+    geom_autodensity(alpha = .3) +
+    facet_matrix(vars(-labels), layer.diag = 2) + 
+    scale_color_brewer(palette = "Dark2") + 
+    scale_fill_brewer(palette = "Dark2")
+
+
+
+
+```
+
+
+using pca reduces interpretability, but it can be recovered. its for classification specifically, separating data to draw lines between them better
+
