@@ -96,15 +96,15 @@ First impressions:
 
 "id" is very likely unique and so is meaningless for predictions. The range is 0-7500 and there are 7498 data entries from the raw data.  
 
-The home_type could function as a category for use as a dummy variable. I should check to see how many categories there actually are, and that they are formatted the same so that a string comparison will work. 
+The home_type could function as a category for use as a dummy variable. I will check to see how many categories there actually are, and that they are formatted the same so that a string comparison will work. 
 
-I should do the same things for city. Intuitively, city will surely affect price, so I should make sure this data is usable. 
+I will do the same things for city. Intuitively, city will surely affect price, so I should make sure this data is usable. 
 
-"garage_spaces" is numeric with range 0-22. Before seeing the range, I would have said maybe it would be better as a factor, but that's a large range. I should see the distribution. It should be a helpful predictor, though I should make sure the rare high values aren't causing anything weird. 
+"garage_spaces" is numeric with range 0-22. Before seeing the range, I would have said maybe it would be better as a factor, but that's a large range. I will look at the distribution. It should be a helpful predictor, though I should make sure the rare high values aren't causing anything weird. 
 
-The "year_built" may be a helpful predictor, though I'm not sure if pure numeric is the right approach there. Range is 1900-2020. Certainly it cannot be used as categorical as it is now, but the difference between a house built in 1990 vs 1991 may be insignificant. And years don't simply indicate things based on their numeric value. They work more as a category than a numeric value when we figure out how much a house is worth. Maybe houses built in a single specific year are worth less. Treating the year as a numeric value doesn't seem like that will be treated correctly. Creating ranges might help maybe? Creating categories basically? Maybe the math does this work for me already though. 
+The "year_built" may be a helpful predictor, though I'm not sure if pure numeric is the right approach there. The range is 1900-2020. Certainly it cannot be used as categorical as it is now, but the difference between a house built in 1990 vs 1991 may be insignificant. And years don't simply indicate things based on their numeric value. They work more as a category than a numeric value when we figure out how much a house is worth. Maybe houses built in a single specific year are worth less. Treating the year as a numeric value doesn't seem like that will be treated correctly. Creating ranges might help maybe? Creating categories basically? It is possible that this is a non-issue though.
 
-Description is immediately going to be tricky to squeeze any worth out of, and there very possibly is no worth in there at all. I'd have to do some like NLP sentiment analysis or specific keyword searching to get anywhere there. It probably wouldn't be worth it, but it might be cool to try if I have time. 
+Description is immediately going to be tricky to squeeze any worth out of, and there very possibly is no worth in there at all. I'd have to do some NLP sentiment analysis or specific keyword searching to get anywhere there. It probably wouldn't be worth it, but it might be interesting to try.
 
 
 Now, latitude and longitude are really interesting. They are connected values but are separate (which is fine). But I'm really not sure if either are influential. Perhaps they could imply that warmer climates are more....desirable? Certainly proximity to cities makes houses more expensive, so this will do some double dipping with city. Using an interaction step between lat and long would be great potentially. It would be great if that would totally replace the city column with something better and more precise. 
@@ -130,9 +130,9 @@ table(train$garage_spaces)
 
 
 ```
-So, for "home_type", There are 5,978 "Single Family" entries, and then 8 categories for the remaining 395 entries. The small amount of entries per category relative to the dataset might mean this predictor will not be helpful. Special care must be taken for the cross validation splits in order to make use of many (probably 6) of these categories. 
+So, for "home_type", There are 5,978 "Single Family" entries, and then 8 categories for the remaining 395 entries. The small amount of entries per category relative to the dataset might mean this predictor will not be helpful. Special care must be taken for the cross validation splits in order to make use of many of these categories. I suspect only the "Condo Mobile", "Multiple Occupancy" and "Townhouse" categories have enough entries to be useful (they each have 43 or more entries). The 5 remaining categories: "Apartment", "Manufactured", "MultiFamily", "Residential", and "Vacant Land" have only 44 entries between all of them. Perhaps the "Apartment" category with 13 entries, and the "Residential" category with 19 entries could be useful. 
 
-For "garage_spaces", there are entries for 0-10, 12 and 22. There is a single entry for 22 garages, making it certainly an outlier. There are only 15 entries that have 7,8,9,19, or 12 garages. Or, there are only 16 entries that have more than 6 garages. Having 5 categories for only 16 entries seems silly. 
+For "garage_spaces", there are entries for 0-10, 12 and 22. There is a single entry for 22 garages, making it certainly an outlier. There are only 15 entries that have 7,8,9,10, or 12 garages. Or, there are only 16 entries that have more than 6 garages. Having 5 categories for only 16 entries seems silly. 
 
 For both of those though, I think the step_other solves it automatically by grouping rare categories into an other...but that's only for categories I think (so it'd work automatically for home_type but not garage_spaces). Garage_spaces used numerically will just work, but maybe it would work better if I manually made categories.
 
@@ -256,22 +256,47 @@ p1
 
 p2
 
-p3 + p6 
-
-p4 + p5
-
-p8 + p9 
-
-p10 + p11 
-
-p12
 
 
 ```
 
-So, just looking at the distributions, the city and home_type columns are a bit worrying because they have overwhelming majority in a single category. It may imply that there isn't much to learn for certain from these columns. 
+So, just looking at the distributions, the city and home_type columns are a bit worrying because they have overwhelming majority in a single category. It may imply that there isn't much to learn for certain from these rare categories. And if there is only a single category, using step_other will group everything but the common group together probably. In that case, the only value of that predictor is a binary for whether the entry is in the common category or not. If the leftover rare categories are not similar, than the usefulness of that is potentially very low.
+
+```{r}
+
+
+
+p4 + p3 #has spa, garage spaces
+
+p6 + p10 #patio, num bathrooms
+
+p11  #bedrooms
+
+
+
+
+
+
+```
+
 
 The has_spa, garage_spaces, num_of_patio_and_porch_features, num_of_bathrooms, and num_of_bedrooms columns all have the strong presence of outliers (which is not unexpected). I just need to be careful with these, but they should be fine. 
+
+```{r}
+
+
+ p5
+
+p8 + p9 
+
+
+p12
+
+
+
+
+```
+
 
 The rest of the potential predictors look healthy. The distribution of price_ranges is especially healthy which is good to see.
 
@@ -293,9 +318,91 @@ plot_list <- map(potential_numeric_predictors, function(var) {
     theme_minimal()
 })
 
-print(plot_list)
 
 
+
+
+
+
+
+```
+
+```{r}
+print(plot_list[1])
+
+```
+
+It looks like latitude increases as price range increases. 
+
+```{r}
+print(plot_list[2])
+
+```
+
+It looks like longitude decreases as price range increases.
+
+```{r}
+print(plot_list[3])
+
+```
+
+Garage_spaces seem to increase as price range increases. 
+
+So far: there doesnt seems to be a noticeable difference in predictors between the two highest price_range categories.  (call this pattern 1)
+
+
+
+```{r}
+print(plot_list[4])
+
+```
+
+There is not a significant or visible pattern for year_built. Makes sense to me. I bet years are predictive, but not as numerical values.  Pattern 1 still holds. 
+
+
+```{r}
+print(plot_list[5])
+
+```
+
+The median doesn't noticeably change for the number of patio/porch features, but the upper range increases as price range increases. Expensive houses dont need a bunch of patio/porch features, but if there are a bunch of patio/porch features then it's probably expensive. Pattern 1 still holds. 
+
+
+```{r}
+print(plot_list[6])
+
+```
+
+Clear increase of price range as average school rating increases. pattern 1 still holds. 
+
+
+
+```{r}
+print(plot_list[7])
+
+```
+
+semi clear increase of median students per teacher as price range increases. the two lowest categories are very similar. Pattern 1 still holds.
+
+
+
+```{r}
+print(plot_list[8])
+
+```
+
+for number of bathrooms, it doesnt seem to make a difference between the 3 lowest price ranges (call this pattern 2). Then it jumps up for the last two ranges. Pattern 1 is close but not really here. It looks like the number of bathrooms will be a prime difference between the highest 2 price ranges. 
+
+
+```{r}
+print(plot_list[9])
+
+```
+
+For the number of bedrooms, we see the same pattern 2. Then we see a pattern 1 as well. There is an increase in the number of bedrooms as price range increases eventually.
+
+
+```{r}
 
 #doing a log scale so resuls are visible
 ggplot(train, aes(x = price_range, y = log10(lot_size_sq_ft))) +
@@ -304,46 +411,20 @@ ggplot(train, aes(x = price_range, y = log10(lot_size_sq_ft))) +
        x = "Price Range", 
        y = "Log(lot_size_sq_ft)") +
   theme_minimal()
-
-
-
-
 ```
-
-
-I will look in more detail later, but for now:
-
-
-It looks like latitude increases as price range increases. 
-
-It looks like longitude decreases as price range increases.
-
-Garage_spaces seem to increase as price range increases. 
-
-So far: there doesnt seems to be a noticeable difference in predictors between the two highest price_range categories.  (call this pattern 1)
-
-Not a significant or visible pattern for year_built. Makes sense to me. I bet years are predictive, but not as numerical values.  Pattern 1 still holds. 
-
-The median doesn't noticeably change for the number of patio/porch features, but the upper range increases as price range increases. Expensive houses dont need a bunch of patio/porch features, but if there are a bunch of patio/porch features then it's probably expensive. Pattern 1 still holds. 
-
-Clear increase of price range as average school rating increases. pattern 1 still holds. 
-
-semi clear increase of mediam students per teacher as price range increases. the two lowest categories are very similar. Pattern 1 still holds.
-
-for number of bathrooms, it doesnt seem to make a difference between the 3 lowest price ranges (call this pattern 2). Then it jumps up for the last two ranges. Pattern 1 is close but not really here. It looks like the number of bathrooms will be a prime difference between the highest 2 price ranges. 
-
-
-For the number of bedrooms, we see the same pattern 2. Then we see a pattern 1 as well. There is an increase in the number of bedrooms as price range increases eventually.
 
 The lot size was not interpretable without a log transformation. Even with the transformation though, the range of lot sizes is vast and inconsistent with price ranges (which is surprising honestly). There is a slight increase in median lot size as price range increases, but it may not be significant. This predictor intuitively seems important. Perhaps it will pair well within an interaction somehow. 
 
 
-Pattern 1 - that there is barely a difference between the predictor within the highest two price ranges
 
-Pattern 2- that there is barely a difference between the predictor within the lowest three price ranges
+To summarize:
+
+Pattern 1 - that there is barely a difference between the predictor within the highest two price ranges, This pattern occurred with nearly all predictors. In all cases, the two highest price ranges do not vary significantly for each predictor.
+
+Pattern 2- that there is barely a difference between the predictor within the lowest three price ranges. This pattern occurred at least twice and maybe 4 times. 
 
 
-All are still promising predictors except for year_built and maybe lot size. Intuitively, I think there is value within them. I have suspicions and hope that with some interactions or data manipulation, that these two predictors may become valuable. 
+All predictors are still promising predictors except for year_built and maybe lot size. Intuitively, I think there is value within them. I have suspicions and hope that with some interactions or data manipulation, that these two predictors may become valuable. It is also possible that there is value within year_built still anyway. I will try using all these predictors before deciding to remove any. 
 
 
 
@@ -356,8 +437,6 @@ All are still promising predictors except for year_built and maybe lot size. Int
 
 ```{r}
 
-#logistic regression and svm are for binary classification data - only a yes and no, membership or not membership
-#we have more than that, so wed have to make a bunch of those for each class (membership or not)
 
 
 
@@ -386,7 +465,7 @@ knn_wf <- workflow() %>%
 
 ```
 
-
+I chose to use a K Nearest Neighbors model first. I opted not to use Logistic Regression or a Support Vector Machine model because they are best fit for binary classification problems. There are more than two categories in the target response variable here. I removed the "id" predictor and the "description" predictor. Then, all the categorical predictors are removed as they are useless to the KNN "voting" mechanics. The rest of the predictors are being used to predict the "price_range" categorical response variable. The numeric data is normalized to make each predictor have an equal vote within KNN. Missing values are imputed using the median of that predictor/column.
 
 
 
@@ -399,33 +478,19 @@ knn_wf <- workflow() %>%
 
 
 
-n_cores <- parallel::detectCores()
-cl <- parallel::makeCluster(n_cores - 1, type = "PSOCK")
-doParallel::registerDoParallel(cl)
-
-tictoc::tic()
-
-knn_tune_results <- knn_wf %>%
-  tune_bayes(
-    resamples = train_folds,  
-    metrics = metric_set(mn_log_loss),
-    initial = 5, 
-    control = control_bayes(parallel_over = "everything")
-  )
-
-tictoc::toc()
-
-doParallel::stopImplicitCluster()
-unregister()
-
-knn_tune_results %>%
-  collect_metrics()
-
-
 #175 seconds
 
 ```
+The above code uses hyperparameter tuning paired with cross validation to find the best combination of hyperparameters for the KNN model. The use of cross validation reduces the chance of overfitting and ensures that our metrics of success (in this case, log loss) are robust and indicative of actual performance at least within the test data. After testing 5  in our hyperparameter space, tune bayes attempts to iterative improve from each of them. We were tuning just the "neighbors" hyperparamter and the results say that the best value for "neighbors" is 15 with a log loss metric of 2.233. Interestingly, this is the highest value tested, so I will re-run the tuning process to see if higher values would be better. 
 
+```{r}
+
+
+
+
+```
+
+Strangely, tripling the initial points took the same amount of time to run. The errors in the console are interesting and generally unhelpful. Results were still had, but increasing the initial points didn't change anything. The best log loss is ~2.33 with the "neighbors" hyperparameter of 15. 
 
 
 ### Fitting Best KNN
@@ -444,11 +509,11 @@ knn_best_fit <- knn_best_wf %>%
   fit(train)
 
 
-knn_best_fit %>% #look at what else you can get out of this
+knn_best_fit %>% 
   extract_fit_engine()
 
 ```
-
+The model was fit successfully. 
 
 
 
@@ -480,6 +545,10 @@ dt_wf <- workflow() %>%
 
 ```
 
+This is the setup for the decision tree. In this model, we are taking advantage of both the numerical and categorical predictors. Description is still excluded as is id. Dummy variables are used for all the categorical predictors. 
+
+
+
 
 ### Decision Tree Tuning with Cross Validation
 
@@ -498,7 +567,7 @@ dt_tune_results <- dt_wf %>%
   tune_bayes(
     resamples = train_folds,
     metrics = metric_set(mn_log_loss),
-    initial = 5, 
+    initial = 10,
     control = control_bayes(parallel_over = "everything")
   )
 
@@ -511,10 +580,15 @@ dt_tune_results %>%
   collect_metrics()
 
 
-#160.1 seconds
+#172.1 seconds
 
 
 ```
+
+
+The decision tree model was tuned using the "tree_depth" and "min_n" hyperparamters. We use an initial sample of 10 hyperparameter combinations and then use tune bayes to iteratively improve the hyperparameters further. Again, cross validation was used so the log loss performance metrics should be robust and reliable. After the tuning completed, the best result had a log loss metric of ~1.312 which is an improvement over the KNN model already. The interesting part here is that multiple hyperparameter combinations resulted in the same (or very similar) log loss performance metric. The best decision tree according to the "select_best" function had a "tree_depth" of 8 and a "min_n" value of 29. This may simply be the first tree with the good log loss metric that is present in other trees. Notably, there is another tree with "tree_depth" of 6 and "min_n" value of 11 with the same log loss metric according to the rounding (6 decimal points) in the table. If these two models are truly similar in performance according to cross validation, it is potentially advantageous to take the less complicated model to avoid any overfitting and to improve efficiency potentially without losing any performance accuracy.
+
+
 
 ### Fitting Best Decision Tree
 
@@ -533,6 +607,13 @@ dt_best_fit <- dt_best_wf %>%
   fit(train)
 ```
 
+
+The best decision tree was fit successfully. 
+
+
+
+
+
 ### Plot Best Decision Tree
 
 ```{r}
@@ -546,20 +627,8 @@ rpart.plot(dt_best_fit %>% extract_fit_engine() )
 
 
 
-tictoc::tic()
-
-dt_tune_results <- dt_wf %>%
-  tune_bayes(
-    resamples = train_folds,
-    metrics = metric_set(mn_log_loss),
-    initial = 5, 
-    control = control_bayes(parallel_over = "everything")
-  )
-
-tictoc::toc()
-
-
 ```
+The plotted decision tree is encouraging because it does not seem superficial at first glance. There is definitely a notable amount of error visible in the plot. Each leaf node has a notable amount of misclassified observations. 
 
 
 
@@ -570,7 +639,7 @@ tictoc::toc()
 #| eval: false
 
 
-knn_best_fiT
+
 
 submission_knn <- knn_best_fit %>% 
   augment(comp) %>% 
@@ -583,7 +652,7 @@ submission_knn <- knn_best_fit %>%
   ) %>% 
   select(id, starts_with ("prob"))
 
-write.csv(submission, "knn_submission.csv", row.names = FALSE)
+write.csv(submission_knn, "knn_submission.csv", row.names = FALSE)
 
 
 
@@ -598,7 +667,7 @@ submission_dt <- dt_best_fit %>%
   ) %>% 
   select(id, starts_with ("prob"))
 
-write.csv(submission, "dt_submission.csv", row.names = FALSE)
+write.csv(submission_dt, "dt_submission.csv", row.names = FALSE)
 
 
 
@@ -609,15 +678,15 @@ write.csv(submission, "dt_submission.csv", row.names = FALSE)
 
 ```{r}
   
-rf_spec <- rand_forest(trees = tune(), mtry = tune(), min_n = tune()) %>% 
+rf_spec <- rand_forest(trees = tune(), min_n = tune()) %>% 
 set_engine("ranger") %>% 
 set_mode("classification")
 
 rf_rec <-  recipe(price_range ~ ., data = train) %>% 
   step_rm(id) %>% 
   step_rm(description) %>% 
-  step_unknown(all_nominal_predictors()) %>% 
   step_novel(all_nominal_predictors()) %>% 
+  step_unknown(all_nominal_predictors()) %>% 
   step_other(all_nominal_predictors()) %>% 
   step_dummy(all_nominal_predictors())  %>% 
   step_impute_knn(all_numeric_predictors()) 
@@ -632,7 +701,7 @@ rf_wf <- workflow() %>%
 
 
 ```
-
+This model is using a random forest model. Missing observations are imputed using KNN. Step other was used to group the rare categories. Step novel and unknown are measures that may not be necessary but shouldn't hurt. There are dummy variables for each categorical predictor. 
 
 
 ### Tuning Random Forest
@@ -651,7 +720,7 @@ dt_tune_results <- rf_wf %>%
   tune_bayes(
     resamples = train_folds,
     metrics = metric_set(mn_log_loss),
-    initial = 3,  #make this bigger after it works
+    initial = 10,  #make this bigger after it works
     control = control_bayes(parallel_over = "everything")
   )
 
@@ -664,10 +733,61 @@ dt_tune_results %>%
   collect_metrics()
 
 
-
+#385 seconds
 
 ```
 
+The best random forest log loss was ~0.944 with 1,582 trees and a min_n of 3. This is a slight, but notable improvement from the normal decision tree. 
+
+
+
+### Fitting Best Random Forest
+
+```{r}
+
+#| eval: false
+
+
+rf_best_params <- dt_tune_results %>%
+  select_best(metric = "mn_log_loss")
+
+rf_best_params
+
+rf_best_wf <- rf_wf %>%
+  finalize_workflow(rf_best_params)
+
+rf_best_fit <- rf_best_wf %>%
+  fit(train)
+```
+
+
+
+
+### Random Forest Predictions for Competition Submission
+
+```{r}
+
+#| eval: false
+
+
+
+rf_submission <- rf_best_fit %>% 
+  augment(comp) %>% 
+  rename(
+    prob_A = ".pred_0-250000",
+    prob_B = ".pred_250000-350000",
+    prob_C = ".pred_350000-450000",
+    prob_D = ".pred_450000-650000",
+    prob_E = ".pred_650000+"
+  ) %>% 
+  select(id, starts_with ("prob"))
+
+write.csv(rf_submission, "rf_submission.csv", row.names = FALSE)
+
+
+
+
+```
 
 
 
