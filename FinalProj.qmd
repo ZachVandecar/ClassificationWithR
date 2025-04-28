@@ -85,6 +85,15 @@ rawData <- rawData %>%
 
 
 ```
+#### Convert LeagueIndex Response to Categorical
+
+```{r}
+
+
+rawData <- rawData %>% 
+  mutate(LeagueIndex = as.factor(LeagueIndex))
+
+```
 
 
 
@@ -298,7 +307,6 @@ knnSpec <- nearest_neighbor( neighbors = tune()  ) %>%
 
 
 knnRec <- recipe(LeagueIndex ~ ., data = train) %>% 
-  step_mutate(LeagueIndex = as.factor(LeagueIndex)) %>%
   step_rm(GameID) %>% 
   step_normalize(all_numeric_predictors()) %>%
   step_rm(all_nominal_predictors()) %>% 
@@ -393,8 +401,7 @@ dtSpec <- decision_tree(tree_depth=tune(), min_n = tune()) %>%
   set_mode("classification")
 
 dtRec <-  recipe(LeagueIndex ~ ., data = train) %>% 
-  step_rm(GameID) %>% 
-  step_mutate(LeagueIndex = as.factor(LeagueIndex))
+  step_rm(GameID)
 
 
 
@@ -502,7 +509,6 @@ dtRec <-  recipe(LeagueIndex ~ ., data = train) %>%
   step_rm(Age) %>% 
   step_rm(HoursPerWeek) %>% 
   step_rm(TotalHours) %>% 
-  step_mutate(LeagueIndex = as.factor(LeagueIndex)) %>% 
   step_smote(LeagueIndex)
 
 
@@ -607,7 +613,6 @@ rfRec <-  recipe(LeagueIndex ~ ., data = train) %>%
   step_rm(Age) %>% 
   step_rm(HoursPerWeek) %>% 
   step_rm(TotalHours) %>% 
-  step_mutate(LeagueIndex = as.factor(LeagueIndex)) %>% 
   step_smote(LeagueIndex)
 
 rfWf <- workflow() %>% 
@@ -725,7 +730,6 @@ xgbRec <- recipe(LeagueIndex ~ ., data = train) %>%
   step_rm(Age) %>% 
   step_rm(HoursPerWeek) %>% 
   step_rm(TotalHours) %>% 
-  step_mutate(LeagueIndex = as.factor(LeagueIndex)) %>% 
   step_smote(LeagueIndex)
 
 xgbWf <- workflow() %>%
@@ -817,8 +821,69 @@ So again, it is reinforced that APM and ActionLatency are the most important pre
 Notably as well, both here and before, the ComplexUnitsMade predictor performed the worst, with the ComplexAbilitiesUsed being better but still second worst. So it does not matter if you are using the complex units or using their abilities. You can succeed without using those units or at least using less of them. 
 
 
+
+
+### Testing Predictive Ability
+
+
+```{r}
+
+
+knnTestResults <- test %>% 
+  select(LeagueIndex) %>% 
+  bind_cols(predict(knnBestFit, test))
+
+knnTestAccuracy <- mean(knnTestResults$LeagueIndex == knnTestResults$.pred_class)
+
+
+
+dtTestResults <- test %>% 
+  select(LeagueIndex) %>% 
+  bind_cols(predict(dtBestFit, test))
+
+dtTestAccuracy <- mean(dtTestResults$LeagueIndex == dtTestResults$.pred_class)
+
+
+
+
+rfTestResults <- test %>% 
+  select(LeagueIndex) %>% 
+  bind_cols(predict(rfBestFit, test))
+
+rfTestAccuracy <- mean(rfTestResults$LeagueIndex == rfTestResults$.pred_class)
+
+
+
+xgbTestResults <- test %>% 
+  select(LeagueIndex) %>% 
+  bind_cols(predict(xgbBestFit, test))
+
+xgbTestAccuracy <- mean(xgbTestResults$LeagueIndex == xgbTestResults$.pred_class)
+
+
+
+
+
+
+
+knnTestAccuracy
+
+dtTestAccuracy
+
+rfTestAccuracy
+
+xgbTestAccuracy
+
+
+
+
+```
+This section has tested the models' performance on completely new data. This test data is entirely unseen by me or the model, so the results are truly untainted. The  worst accuracy was ~31.8% with the decision tree and best accuracy was ~35.6% with the XGBoost model. Both the random forest and the KNN model were just below the XGBoost model with ~35.3% and ~35.4% accuracy respectively. These results are good because they are in line with our estimates using our cross validation techniques. This supposes that our models are not overfit meaning that they are predicting real patterns and not just noise. The reapperance of the ~35% accuracy as well as all the models having a similar accuracy suggest that, again, around 35% of a player's rank can be attributed to these technical skills within the dataset. Outside of this ~35% lies game strategy, game knowledge and luck, likely among other things.
+
+
+
 ## Conclusion
 
-Because the intention of this report was not to predict the LeagueIndex of new player data, it can be said to be a success. The models created would not perform well to predict the LeagueIndex of new data, and nor should it. If it did, it would suggest that game knowledge and strategy do not play a large part of what rank a player is in, which would be alarming. With more intensive tuning, the accuracy would surely go up a bit more, but I am unsure the limit. Whatever that limit is, it can be considered the amount that game knowledge, strategy, hours played, and luck contribute to a player's rank in Starcraft 2. From the models created here, that limit is likely around 60%. What this report confirms, is that, in conjuction with the missing factors, around 40% of the reason for a player's rank are these metrics here, all of which can be recorded automatically while playing. 40% is not a small amount, and these metrics are all measurable and measurably improvable.
+Because the intention of this report was not to predict the LeagueIndex of new player data, it can be said to be a success. The models created would not perform well to predict the LeagueIndex of new data, and nor should it. If it did, it would suggest that game knowledge and strategy do not play a large part of what rank a player is in, which would be alarming. With more intensive tuning, the accuracy would likely go up a bit more, but I am unsure the limit. Whatever that limit is, it can be considered the amount that the predictors contribute to to a player's rank in Starcraft 2. That limit seems to be around ~35% based on the models we tuned and fit. The remaining ~65% that is unpredicted by our models is likely attributable to game knowledge, strategy, hours played, and luck. What this report confirms, is that around 35% of the reason for a player's rank are the metrics used as predictors for these models. All of which can be recorded automatically while playing the game. 35% is not a small amount when looking to improve one's skills, and these metrics are all measurable and measurably improvable.
 
 So, if you are playing Starcraft 2, and you intend to climb the ranks, you should track these metrics paying special attention to APM and ActionLatency. You should see what you can do to improve these skills, which mostly includes thinking faster and acting faster. Most importantly though, you should match your values of these metrics to those in the decision tree and then, if you get the rank you are in, you should look at what would put you in the next rank up. For the lower ranks, it is likely the case that you just need to improve APM and ActionLatency, but going into the 6,7,8 ranks, you may need to switch your focus to MinimapAttacks, GapBetweenPACs, SelectByHotkeys, or AssignToHotkeys. And if you improve these values, but do not improve rank, then you need to focus on game knowledge and game strategy. In that case you should learn some playstyles and playstyle counters.
