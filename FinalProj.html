@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Starcraft 2 - How Performance Metrics Relate to League Placement</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="FinalProj_files/libs/clipboard/clipboard.min.js"></script>
+<script src="FinalProj_files/libs/quarto-html/quarto.js"></script>
+<script src="FinalProj_files/libs/quarto-html/popper.min.js"></script>
+<script src="FinalProj_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="FinalProj_files/libs/quarto-html/anchor.min.js"></script>
+<link href="FinalProj_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="FinalProj_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="FinalProj_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="FinalProj_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="FinalProj_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Starcraft 2 - How Performance Metrics Relate to League Placement</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.4     ✔ readr     2.1.5
+✔ forcats   1.0.0     ✔ stringr   1.5.1
+✔ ggplot2   3.5.1     ✔ tibble    3.2.1
+✔ lubridate 1.9.3     ✔ tidyr     1.3.1
+✔ purrr     1.0.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidymodels)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching packages ────────────────────────────────────── tidymodels 1.2.0 ──
+✔ broom        1.0.6     ✔ rsample      1.2.1
+✔ dials        1.3.0     ✔ tune         1.2.1
+✔ infer        1.0.7     ✔ workflows    1.1.4
+✔ modeldata    1.4.0     ✔ workflowsets 1.1.0
+✔ parsnip      1.2.1     ✔ yardstick    1.3.1
+✔ recipes      1.1.0     
+── Conflicts ───────────────────────────────────────── tidymodels_conflicts() ──
+✖ scales::discard() masks purrr::discard()
+✖ dplyr::filter()   masks stats::filter()
+✖ recipes::fixed()  masks stringr::fixed()
+✖ dplyr::lag()      masks stats::lag()
+✖ yardstick::spec() masks readr::spec()
+✖ recipes::step()   masks stats::step()
+• Learn how to get started at https://www.tidymodels.org/start/</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'kableExtra' was built under R version 4.4.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'kableExtra'
+
+The following object is masked from 'package:dplyr':
+
+    group_rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rpart.plot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'rpart.plot' was built under R version 4.4.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: rpart
+
+Attaching package: 'rpart'
+
+The following object is masked from 'package:dials':
+
+    prune</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(vip)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'vip' was built under R version 4.4.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'vip'
+
+The following object is masked from 'package:utils':
+
+    vi</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(purrr) </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(xgboost)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'xgboost' was built under R version 4.4.2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'xgboost'
+
+The following object is masked from 'package:dplyr':
+
+    slice</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(themis)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'themis' was built under R version 4.4.3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>rawData <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"starcraft_player_data.csv"</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">kable_styling_bootstrap_options =</span> <span class="fu">c</span>(<span class="st">"hover"</span>, <span class="st">"striped"</span>))</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">14</span>))</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>unregister <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  env <span class="ot">&lt;-</span> foreach<span class="sc">:::</span>.foreachGlobals</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span>(<span class="at">list=</span><span class="fu">ls</span>(<span class="at">name=</span>env), <span class="at">pos=</span>env)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="statement-of-purpose" class="level3">
+<h3 class="anchored" data-anchor-id="statement-of-purpose">Statement of Purpose</h3>
+<p>This report intends to analyze what factors contribute to or are predictive of high level Starcraft 2 play. In general The report will attempt to predict the “LeagueIndex” using statistics from a game replay. The statistics that are highly predictive of higher “LeagueIndex” are likely statistics that are worth training and improving as skills that improve your rank.</p>
+</section>
+<section id="exploratory-data-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="exploratory-data-analysis">Exploratory Data Analysis</h3>
+<p>To start, the LeagueIndex column is our response variable. This value ranges from 1-8 and we will be attempting to use classification modeling to identify the most valuable predictors. The 1-8 value represents “Bronze, Silver, Gold, Platinum, Diamond, Master, GrandMaster, and Professional leagues.”</p>
+<section id="class-imbalance-check" class="level4">
+<h4 class="anchored" data-anchor-id="class-imbalance-check">Class Imbalance Check</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(rawData<span class="sc">$</span>LeagueIndex)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  1   2   3   4   5   6   7   8 
+167 347 553 811 806 621  35  55 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>numGrandMaster <span class="ot">&lt;-</span> rawData <span class="sc">%&gt;%</span> <span class="fu">count</span>(LeagueIndex <span class="sc">==</span> <span class="dv">7</span>) </span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>numGrandMaster</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  LeagueIndex == 7    n
+1            FALSE 3360
+2             TRUE   35</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="dv">35</span><span class="sc">/</span><span class="dv">3395</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.01030928</code></pre>
+</div>
+</div>
+<p>It is rarest to be of LeagueIndex 7. Only 35 observations are GrandMasters (rank 7). This equates to 35/3395=0.01030928, so ~1% of the observations. This should be fair grounds for stratifying the dataset during the data splitting.</p>
+</section>
+<section id="converting-predictors-from-character-to-numeric" class="level4">
+<h4 class="anchored" data-anchor-id="converting-predictors-from-character-to-numeric">Converting Predictors from Character to Numeric</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>rawData <span class="ot">&lt;-</span> rawData <span class="sc">%&gt;%</span> </span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Age =</span> <span class="fu">as.numeric</span>(Age))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There was 1 warning in `mutate()`.
+ℹ In argument: `Age = as.numeric(Age)`.
+Caused by warning:
+! NAs introduced by coercion</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>rawData <span class="ot">&lt;-</span> rawData <span class="sc">%&gt;%</span> </span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">HoursPerWeek =</span> <span class="fu">as.numeric</span>(HoursPerWeek))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There was 1 warning in `mutate()`.
+ℹ In argument: `HoursPerWeek = as.numeric(HoursPerWeek)`.
+Caused by warning:
+! NAs introduced by coercion</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>rawData <span class="ot">&lt;-</span> rawData <span class="sc">%&gt;%</span> </span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TotalHours =</span> <span class="fu">as.numeric</span>(TotalHours))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There was 1 warning in `mutate()`.
+ℹ In argument: `TotalHours = as.numeric(TotalHours)`.
+Caused by warning:
+! NAs introduced by coercion</code></pre>
+</div>
+</div>
+</section>
+<section id="data-split-and-cv-folds" class="level4">
+<h4 class="anchored" data-anchor-id="data-split-and-cv-folds">Data Split and CV Folds</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">22</span>)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>dataSplits <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(rawData, <span class="at">prop =</span> <span class="fl">0.80</span>, <span class="at">strata =</span> LeagueIndex)</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>train <span class="ot">&lt;-</span> <span class="fu">training</span>(dataSplits)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">testing</span>(dataSplits)</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="co"># cross-validation folds </span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">22</span>)</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>trainFolds <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(train, <span class="at">v =</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The dataset has been split into train and test by an 80/20 split. It is stratified using our response LeagueIndex so that both train and test have a proportional amount of each LeagueIndex rank. The train set is then split into 10 training folds to be used for cross validation later.</p>
+</section>
+<section id="first-look" class="level4">
+<h4 class="anchored" data-anchor-id="first-look">First Look</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   GameID LeagueIndex Age HoursPerWeek TotalHours      APM SelectByHotkeys
+1      57           3  19           20        400 107.6016    0.0010335422
+2      58           3  32           10        500 122.8908    0.0011360136
+3      60           2  27            6         70  44.4570    0.0009783903
+4      61           1  21            8        240  46.9962    0.0008201141
+5      83           3  16           16       6000 153.8010    0.0016766146
+6      97           3  18           12        350  67.4754    0.0004225216
+7     160           3  19            6        150  64.6416    0.0006723442
+8     161           3  18            8        250  41.9094    0.0002757509
+9     175           3  16           24        300  81.0702    0.0017467932
+10    181           2  25           10        200  75.9642    0.0006096651
+   AssignToHotkeys UniqueHotkeys MinimapAttacks MinimapRightClicks NumberOfPACs
+1     0.0002131015             1   5.327537e-05       5.434088e-04  0.003782551
+2     0.0003273259             2   0.000000e+00       1.328558e-03  0.002368299
+3     0.0002552323             2   0.000000e+00       0.000000e+00  0.002424707
+4     0.0001685166             6   0.000000e+00       4.493776e-05  0.001988496
+5     0.0003185568             4   0.000000e+00       8.215411e-04  0.003772383
+6     0.0001690086             1   2.414409e-05       1.448646e-04  0.002885219
+7     0.0003361721             1   1.540789e-04       2.031040e-04  0.002759413
+8     0.0001909045             0   0.000000e+00       1.696929e-04  0.002142372
+9     0.0001042862             0   2.607154e-05       1.433935e-04  0.002620190
+10    0.0001368636             4   1.244214e-04       3.234957e-04  0.002090280
+   GapBetweenPACs ActionLatency ActionsInPAC TotalMapExplored WorkersMade
+1         29.2203       53.7352       4.9155               19  0.00042620
+2         22.6885       62.0813       9.3740               15  0.00117450
+3         76.4405       98.7719       3.0965               16  0.00037221
+4         94.0227       90.5311       4.1017               15  0.00057296
+5         23.4107       48.0711       7.0044               24  0.00159280
+6         42.4370       68.0502       4.3222               16  0.00074847
+7         53.5776       78.2944       4.2284               41  0.00063733
+8         54.4677       91.3069       3.6881               17  0.00066817
+9         47.4800       75.0846       5.0796               14  0.00080822
+10        45.1018       78.3095       6.5417               15  0.00093316
+   UniqueUnitsMade ComplexUnitsMade ComplexAbilitiesUsed
+1                7     0.000000e+00           3.8358e-04
+2                4     0.000000e+00           1.9254e-05
+3                6     0.000000e+00           0.0000e+00
+4                5     0.000000e+00           0.0000e+00
+5                7     0.000000e+00           1.6766e-05
+6                7     0.000000e+00           4.3459e-04
+7                6     7.003586e-05           6.3032e-05
+8                6     0.000000e+00           2.1212e-05
+9                6     2.607154e-05           3.9107e-05
+10               6     0.000000e+00           0.0000e+00</code></pre>
+</div>
+</div>
+<p>Immediately here, it must be noted that the SelectByHotkeys, AssignToHotkeys, MinimapAttacks, MinimapRightClicks, NumberOfPACs, GapBetweenPACs, WorkersMade, ComplexUnitsMade, and ComplexAbilitiesUsed are all columns generally composed of decimals less than 0.001. Some of those columns are generally less than 0.0001. This is because these columns are statistics measured <em>by timestep</em>. This means that these statistics take the game length into account, which is good in terms of predictive value. In longer games, a player should have more workers made, so the WorkersMade statistic is workers made per timestep rather than just workers made during a game. The thing to consider here is if the small numeric values will cause any problems or be underrepresented in the modeling process. Distance based modeling techniques like Support Vector Machines and K Nearest Neighbors certainly need scaled data, but these columns are not small enough that they would cause issues outside of that.</p>
+<p>All the data is numeric and complete, so neither imputation nor dummy variables are necessary.</p>
+</section>
+<section id="plotting-predictors-against-response" class="level4">
+<h4 class="anchored" data-anchor-id="plotting-predictors-against-response">Plotting Predictors Against Response</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>graphData <span class="ot">&lt;-</span> train <span class="sc">%&gt;%</span> </span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">LeagueIndex =</span> <span class="fu">as.factor</span>(LeagueIndex)) <span class="sc">%&gt;%</span> </span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">TotalHours =</span> <span class="fu">ifelse</span>(TotalHours <span class="sc">&gt;</span> <span class="dv">10000</span>, <span class="cn">NA</span>, TotalHours))</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>potential_numeric_predictors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Age"</span>,<span class="st">"HoursPerWeek"</span>,<span class="st">"TotalHours"</span>,<span class="st">"APM"</span>,<span class="st">"SelectByHotkeys"</span>,<span class="st">"AssignToHotkeys"</span>,<span class="st">"UniqueHotkeys"</span>,<span class="st">"MinimapAttacks"</span>, <span class="st">"MinimapRightClicks"</span>, <span class="st">"NumberOfPACs"</span>,<span class="st">"GapBetweenPACs"</span>, <span class="st">"ActionLatency"</span>, <span class="st">"ActionsInPAC"</span>, <span class="st">"TotalMapExplored"</span>, <span class="st">"WorkersMade"</span>, <span class="st">"UniqueUnitsMade"</span>, <span class="st">"ComplexUnitsMade"</span>, <span class="st">"ComplexAbilitiesUsed"</span>)</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Create boxplots for each numeric predictor...the purrr library made it easier</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>plot_list <span class="ot">&lt;-</span> <span class="fu">map</span>(potential_numeric_predictors, <span class="cf">function</span>(var) {</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(graphData, <span class="fu">aes</span>(<span class="at">x =</span> LeagueIndex, <span class="at">y =</span> .data[[var]])) <span class="sc">+</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_boxplot</span>(<span class="at">fill =</span> <span class="st">"steelblue"</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>, <span class="at">outlier.color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">title =</span> <span class="fu">paste</span>(<span class="st">"Boxplot of"</span>, var, <span class="st">"by League Index"</span>), <span class="at">x =</span> <span class="st">"League Index"</span>, <span class="at">y =</span> var) <span class="sc">+</span></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>()</span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The purpose of this section is to look at broad relationships between the predictors and the response. So we are simply looking at broad positive or negative relationships. Intuition would tell us that ActionLatency is bad for performance, but this step is double checking things like that.</p>
+<p>Extreme outliers existed in TotalHours that were removed for the purpose of graphing. Some entries are certainly troll entries as one claims to have played for 114 years. Most of the entries are automatically gathered data, but the TotalHours must have been done by survey.</p>
+</section>
+<section id="positive-correlation" class="level4">
+<h4 class="anchored" data-anchor-id="positive-correlation">Positive Correlation</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">4</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">5</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-7-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">6</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-7-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">7</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-7-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">10</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-7-5.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>There are 8 potential predictors with clear positive correlation with LeagueIndex. Over half of these predictors, namely APM, SelectByHotKeys, AssignToHotkeys, UniqueHotkeys and NumberOfPACs, have strong, clear and consistent positive linear correlation to LeagueIndex. So these are skills that are consistently correlated with higher level play.</p>
+<p>In context, better players have better APM (actions per minute). Better players also use more selection hotkeys. Lastly, better players have more PACs.</p>
+<p>A higher APM means you are making more actions. This relates to the speed and efficiency of your play.</p>
+<p>The three hotkey predictors are all related to using shortcuts to accomplish tasks. Instead of moving the camera and clicking to select things, better players use a single keyboard key to accomplish the same task. This is also indicative of the speed and efficiency you perform at. It also allows you to be making actions across more of the map than normal. You can only be looking at one area of the map at once, but hotkeys allow you to control things that are not on your screen.</p>
+<p>A PAC is a “perception action cycle” that is basically a movement of the camera followed by some number of actions. More PACs means you are doing more things in different places on the map. Broadly it means that you are doing more things in different places at once. You are able to split your attention across the map better if you have more PACs.</p>
+<p>Now, any player can simply improve all these stats by panning around the screen and spamming keyboard hotkeys like a madman, but that won’t help them climb the ranks. These are, however, great metrics to track your performance and for looking for areas of improvement. A lacking of any of these statistics likely means a disadvantage. Additionally, these statistics are all very related to the speed or efficiency that a player plays at. This is independent of game knowledge or strategy which are other important factors, but if you want to get better, you need to be able to do things as quickly as your opponent.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">2</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 47 rows containing non-finite outside the scale range
+(`stat_boxplot()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">3</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 52 rows containing non-finite outside the scale range
+(`stat_boxplot()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-8-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">8</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-8-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">9</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-8-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The other predictors here, namely HoursPerWeek, TotalHours, MinimapAttacks and MinimapRightClicks, they have much smaller changes between lower LeagueIndex values but then jump up towards the higher LeagueIndex Values. So this second group of positive predictors might be able to define the difference between low level and high level play more broadly. Particularly, these predictors see significant increases in LeagueIndex 7 and 8 (the highest two leagues). So the best players use these skills the most.</p>
+<p>Unfortunately the dataset seems to not have data for the TotalHours or HoursPerWeek of the players of rank 8 (the highest rank). This might have something to do with how the survey was dispersed.</p>
+<p>So we cannot say whether the pattern would continue to rank 8, but there is a significant jump between ranks 5 and 6 in the HoursPerWeek predictor, and a there is a significant jump between ranks 6 and 7 in the TotalHours predictor. One way to interpret this is simply that it requires more and more hours to improve at the game as you get better. It looks like between 0 and ~700 TotalHours might have a very small linear increase between ranks 1-6, but then to get to rank 7 on average requires ~500 additional TotalHours. This is to say that, on average, putting more time in does not directly improve your skill necessarily. There are minor gains with TotalHours, so on average a player will improve the longer they play, but the additional HoursPerWeek seems unhelpful until ranks 6 and 7.</p>
+<p>So, if you want to improve playing more should help a bit, but it does not need to be consistent. If you want to compete with the highest ranking players, you may have to dedicate a significant amount of time to play per week. Few people in ranks 6 or 7 play less than ~12 hours per week and most play ~20-30 hours a week.</p>
+<p>Minimap attacks and right clicks allow the player to make actions that are off their screens. It means they can be acting in many places on the map at once while looking at only one part of it. It seems like between ranks 1-4, that this metric is not important. These players are likely overwhelmed enough that using these abilities does not help them. MinimapRighClicks increase only slightly until rank 8 where it jumps way up. MinimapAttacks increase only slightly until ranks 7 and 8 where it jumps way up. I would take this to describe these statistics as luxury statistics. Unless a player is gunning for the highest ranks, then these metrics are not terribly important for competing for ranks below 6. It is very possible for a player to climb lower ranks without using these mechanics very much at all.</p>
+</section>
+<section id="negative-correlation" class="level4">
+<h4 class="anchored" data-anchor-id="negative-correlation">Negative Correlation</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">11</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">12</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-9-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The GapBetweenPACs and ActionLatency predictors are strongly, consistently, and negatively correlated to LeagueIndex.</p>
+<p>In context, this makes perfect sense. Action Latency is a measure of the mean delay between a screen movement and a new action. It is essentially the average length of PACs (time between moving the camera and then making your first action with the new location). Essentially, it is a delay between seeing new things and then making a decision on what needs to happen. Having a higher Action Latency means that you are taking longer between seeing something and deciding what to do (and usually doing something is better than not in Starcraft 2; things happen automatically, but usually player involvement can improve the outcome).</p>
+<p>Action latency is essentially a measure of how quickly you react to things happening on your screen.</p>
+<p>And the GapBetweenPACs is a measure of the mean delay between different PACs. This is essentially how long on average you keep the camera in one area. A higher value here means that you don’t move the camera as often (or you move the camera and don’t make actions often). A lower value here means you move the camera and make actions often.</p>
+<p>The Gap Between PACs is essentially measuring how often you are moving around the map and making actions in response to new visual information. This measures how much new information you are capable of absorbing and how quickly you absorb it. It also measures how quickly you turn the new information into a retaliatory/responsive action.</p>
+<p>Both of these metrics are therefore sensibly and statistically relevant to performance in Starcraft 2. If you want to improve your rank, these are metrics that should be noteworthy to you. You’ll want to minimize both of these metrics by being able to process information faster and make responsive actions faster.</p>
+<p>It is perhaps interesting that both the number of PACs and the Gap Between PACs are entries in the dataset. I am unsure if these two metrics carry the same information. One is the total number per game, the other is the average delay between them. There is certainly overlap and the two graphs do look pretty similarly distributed (just oppositely correlated). To improve both of them, you do the same thing as well, you do more PACs.</p>
+</section>
+<section id="nolittle-correlation" class="level4">
+<h4 class="anchored" data-anchor-id="nolittle-correlation">No/Little Correlation</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 46 rows containing non-finite outside the scale range
+(`stat_boxplot()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">13</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-10-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">14</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-10-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">15</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-10-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">16</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-10-5.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">17</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-10-6.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(plot_list[<span class="dv">18</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-10-7.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>These last metrics, Age, ActionsInPAC, TotalMapExplored, WorkersMade, UniqueUnitesMade, ComplexUnitsMade, and ComplexAbilitiesUsed, they are all not obviously correlated to LeagueIndex. The age of rank 8 players is also missing like the TotalHours and HoursPerWeek. It is likely related to the survey method.</p>
+<p>Starting with age, there does seem to be no real correlation between LeagueIndex and age. Few players in this dataset are over 25 years old and rank 6 and 7 players tend to be younger than 25 (which would explain the more hours per week).</p>
+<p>The ActionsInPAC metric is a mean number of actions within a PAC. So, when the player moves the camera, this is a measure of the number of actions they make there before they move the camera again. This too seemed to stay pretty much the same across LeagueIndex. The number of actions you do after moving the camera is largely irrelevant then.</p>
+<p>The TotalMapExplored metric is a measure of how much of the map is viewed per timestep. Essentially, this is a measure of how much raw visual information a player is getting on average during the game. There is also no strong correlation here with LeagueIndex. There is perhaps a small positive correlation because having more information is generally good, but it doesn’t really matter how much information you have if your aren’t responding to it quickly. If you get visual information and do not respond, it is like wasting that information and that time, which is why PACs and PAC delays are helpful metrics.</p>
+<p>The WorkersMade metric is simply the number of workers made per timestep (so this scales with game length). A higher number means a player makes more workers. There is a small linear correlation between ranks 1-6 before it stagnates for rank 7 and then drops for rank 8. More workers is good generally, but it is sacrificing current resources for later resources which can be harmful. The priority is winning (ending) the game, so creating the minimal number of workers to win the game is optimal. Notably, the highest ranked players have a noticeably lower WorkersMade amount than ranks 5-7 meaning that these players are more optimal with their workers. They are less prone to creating more workers than they need.</p>
+<p>The UniqueUnitsMade metric has no obvious correlation to LeagueIndex, but rank 8 players, on average, seem to know what they want more than rank 4-7 players. Ranks 1-3 players eventually learn that all the units have their position in the meta, then rank 5-7 players seem to make use of many of the total units often. Then finally, rank 8 players seem to be more picky about what they use, likely having the most extreme knowledge of the meta and which units are optimal.</p>
+<p>Looking at the ComplexUnitsMade metric is the most interesting here because of the extreme loss between ranks 7 and 8. This is potentially only because there are fewer rank 8 players, but it may mean that the highest ranked players create less complex units, or that they simply do not lose the ones they create. Again, there is no clear correlation with LeagueIndex.</p>
+<p>All of these metrics have some interesting potential findings, but none of them are greatly predictive of LeagueIndex. This implies that these metrics are not metrics that need to be focused on while improving your skills (though it does perhaps depend on your rank).</p>
+</section>
+</section>
+<section id="modeling-section" class="level2">
+<h2 class="anchored" data-anchor-id="modeling-section">Modeling Section</h2>
+<p>Multiple models will be considered, particularly K Nearest Neighbors, Decision Tree, Random Forest, and XgBoost.</p>
+<section id="knn-model" class="level3">
+<h3 class="anchored" data-anchor-id="knn-model">KNN Model</h3>
+<section id="knn-setup" class="level4">
+<h4 class="anchored" data-anchor-id="knn-setup">KNN Setup</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>knnSpec <span class="ot">&lt;-</span> <span class="fu">nearest_neighbor</span>( <span class="at">neighbors =</span> <span class="fu">tune</span>()  ) <span class="sc">%&gt;%</span> </span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"kknn"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>)</span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a>knnRec <span class="ot">&lt;-</span> <span class="fu">recipe</span>(LeagueIndex <span class="sc">~</span> ., <span class="at">data =</span> train) <span class="sc">%&gt;%</span> </span>
+<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_mutate</span>(<span class="at">LeagueIndex =</span> <span class="fu">as.factor</span>(LeagueIndex)) <span class="sc">%&gt;%</span></span>
+<span id="cb75-8"><a href="#cb75-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(GameID) <span class="sc">%&gt;%</span> </span>
+<span id="cb75-9"><a href="#cb75-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_numeric_predictors</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb75-10"><a href="#cb75-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(<span class="fu">all_nominal_predictors</span>()) <span class="sc">%&gt;%</span> </span>
+<span id="cb75-11"><a href="#cb75-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_impute_median</span>(<span class="fu">all_numeric_predictors</span>()) </span>
+<span id="cb75-12"><a href="#cb75-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-13"><a href="#cb75-13" aria-hidden="true" tabindex="-1"></a>knnWf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb75-14"><a href="#cb75-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(knnSpec) <span class="sc">%&gt;%</span> </span>
+<span id="cb75-15"><a href="#cb75-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(knnRec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>For the KNN model, the “neighbors” hyperparameter is being tuned. All predictors are used to attempt to predict LeagueIndex. GameId is removed because it is not predictive, it is a label. The numeric predictors are normalized so that they have equally weighted votes. This solves the issue of the small values of some predictors. 20 initial hyperparameter combinations are being used and Bayesian Optimization explores the hyperparamter space further to look for even more optimal solutions.</p>
+</section>
+<section id="knn-tune" class="level4">
+<h4 class="anchored" data-anchor-id="knn-tune">KNN Tune</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a>n_cores <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()</span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">makeCluster</span>(n_cores <span class="sc">-</span> <span class="dv">1</span>, <span class="at">type =</span> <span class="st">"PSOCK"</span>)</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">tic</span>()</span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a>knnTuneResults <span class="ot">&lt;-</span> knnWf <span class="sc">%&gt;%</span></span>
+<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tune_bayes</span>(</span>
+<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">resamples =</span> trainFolds,</span>
+<span id="cb76-10"><a href="#cb76-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">metric_set</span>(accuracy),</span>
+<span id="cb76-11"><a href="#cb76-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">initial =</span> <span class="dv">20</span>,</span>
+<span id="cb76-12"><a href="#cb76-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">control =</span> <span class="fu">control_bayes</span>(<span class="at">parallel_over =</span> <span class="st">"everything"</span>)</span>
+<span id="cb76-13"><a href="#cb76-13" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in max(grid[[nm]], na.rm = TRUE): no non-missing arguments to max;
+returning -Inf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All models failed. Run `show_notes(.Last.tune.result)` for more
+information.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>! No improvement for 10 iterations; returning current results.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>36.19 sec elapsed</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">stopImplicitCluster</span>()</span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unregister</span>()</span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a>knnTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect_metrics</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 15 × 8
+   neighbors .metric  .estimator  mean     n std_err .config               .iter
+       &lt;int&gt; &lt;chr&gt;    &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;                 &lt;int&gt;
+ 1         2 accuracy multiclass 0.318    10 0.00984 Preprocessor1_Model01     0
+ 2         3 accuracy multiclass 0.318    10 0.00984 Preprocessor1_Model02     0
+ 3         4 accuracy multiclass 0.318    10 0.00984 Preprocessor1_Model03     0
+ 4         5 accuracy multiclass 0.323    10 0.00881 Preprocessor1_Model04     0
+ 5         6 accuracy multiclass 0.327    10 0.00871 Preprocessor1_Model05     0
+ 6         7 accuracy multiclass 0.331    10 0.00840 Preprocessor1_Model06     0
+ 7         8 accuracy multiclass 0.332    10 0.00828 Preprocessor1_Model07     0
+ 8         9 accuracy multiclass 0.338    10 0.00903 Preprocessor1_Model08     0
+ 9        10 accuracy multiclass 0.343    10 0.00850 Preprocessor1_Model09     0
+10        11 accuracy multiclass 0.348    10 0.00906 Preprocessor1_Model10     0
+11        12 accuracy multiclass 0.348    10 0.00885 Preprocessor1_Model11     0
+12        13 accuracy multiclass 0.349    10 0.00801 Preprocessor1_Model12     0
+13        14 accuracy multiclass 0.352    10 0.00795 Preprocessor1_Model13     0
+14        15 accuracy multiclass 0.353    10 0.00702 Preprocessor1_Model14     0
+15         1 accuracy multiclass 0.318    10 0.00984 Iter1                     1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="co">#33.32 sec elapsed</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>First off, the mean accuracy of all the iterations is around 32% which is not absolutely terrible because there are 8 response categories. It also makes sense that performance metrics are not the ultimate decider of ranked performance. A 30% predictor of rank makes intuitive sense for these metrics because we have no metrics for strategy or game knowledge at all. Any player could pretty easily force their metrics to look very good, but if they aren’t using these skills to do anything productive, they will never win. It would be like being the fastest runner on the football field but never running in the right direction and not knowing the rules of the game.</p>
+<p>The best KNN model had an accuracy of ~35.3% using 15 voting neighbors.</p>
+</section>
+<section id="knn-fit" class="level4">
+<h4 class="anchored" data-anchor-id="knn-fit">KNN Fit</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a>knnBestParams <span class="ot">&lt;-</span> knnTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select_best</span>(<span class="at">metric =</span> <span class="st">"accuracy"</span>)</span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>knnBestWf <span class="ot">&lt;-</span> knnWf <span class="sc">%&gt;%</span></span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">finalize_workflow</span>(knnBestParams)</span>
+<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>knnBestFit <span class="ot">&lt;-</span> knnBestWf <span class="sc">%&gt;%</span></span>
+<span id="cb101-8"><a href="#cb101-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'kknn' was built under R version 4.4.2</code></pre>
+</div>
+</div>
+<p>The fit was successful and will be used with test data at the end of the report.</p>
+</section>
+</section>
+<section id="decision-tree-model" class="level3">
+<h3 class="anchored" data-anchor-id="decision-tree-model">Decision Tree Model</h3>
+<section id="decision-tree-setup" class="level4">
+<h4 class="anchored" data-anchor-id="decision-tree-setup">Decision Tree Setup</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>dtSpec <span class="ot">&lt;-</span> <span class="fu">decision_tree</span>(<span class="at">tree_depth=</span><span class="fu">tune</span>(), <span class="at">min_n =</span> <span class="fu">tune</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"rpart"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb103-3"><a href="#cb103-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>)</span>
+<span id="cb103-4"><a href="#cb103-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-5"><a href="#cb103-5" aria-hidden="true" tabindex="-1"></a>dtRec <span class="ot">&lt;-</span>  <span class="fu">recipe</span>(LeagueIndex <span class="sc">~</span> ., <span class="at">data =</span> train) <span class="sc">%&gt;%</span> </span>
+<span id="cb103-6"><a href="#cb103-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(GameID) <span class="sc">%&gt;%</span> </span>
+<span id="cb103-7"><a href="#cb103-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_mutate</span>(<span class="at">LeagueIndex =</span> <span class="fu">as.factor</span>(LeagueIndex))</span>
+<span id="cb103-8"><a href="#cb103-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-9"><a href="#cb103-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-10"><a href="#cb103-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-11"><a href="#cb103-11" aria-hidden="true" tabindex="-1"></a>dtWf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb103-12"><a href="#cb103-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(dtSpec) <span class="sc">%&gt;%</span> </span>
+<span id="cb103-13"><a href="#cb103-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(dtRec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>For the Decision Tree model, the “tree_depth” and “min_n” hyperparameters are being tuned. All predictors are used to attempt to predict LeagueIndex. GameId is removed because it is not predictive, it is a label. 20 initial hyperparameter combinations are being used and Bayesian Optimization explores the hyperparamter space further to look for even more optimal solutions.</p>
+</section>
+<section id="decision-tree-tune" class="level4">
+<h4 class="anchored" data-anchor-id="decision-tree-tune">Decision Tree Tune</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a>n_cores <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()</span>
+<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">makeCluster</span>(n_cores <span class="sc">-</span> <span class="dv">1</span>, <span class="at">type =</span> <span class="st">"PSOCK"</span>)</span>
+<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-5"><a href="#cb104-5" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">tic</span>()</span>
+<span id="cb104-6"><a href="#cb104-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-7"><a href="#cb104-7" aria-hidden="true" tabindex="-1"></a>dtTuneResults <span class="ot">&lt;-</span> dtWf <span class="sc">%&gt;%</span></span>
+<span id="cb104-8"><a href="#cb104-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tune_bayes</span>(</span>
+<span id="cb104-9"><a href="#cb104-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">resamples =</span> trainFolds,</span>
+<span id="cb104-10"><a href="#cb104-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">metric_set</span>(accuracy),</span>
+<span id="cb104-11"><a href="#cb104-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">initial =</span> <span class="dv">20</span>,</span>
+<span id="cb104-12"><a href="#cb104-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">control =</span> <span class="fu">control_bayes</span>(<span class="at">parallel_over =</span> <span class="st">"everything"</span>)</span>
+<span id="cb104-13"><a href="#cb104-13" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>! No improvement for 10 iterations; returning current results.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>40.9 sec elapsed</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">stopImplicitCluster</span>()</span>
+<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unregister</span>()</span>
+<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>dtTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect_metrics</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 30 × 9
+   tree_depth min_n .metric  .estimator  mean     n std_err .config        .iter
+        &lt;int&gt; &lt;int&gt; &lt;chr&gt;    &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;          &lt;int&gt;
+ 1          9     9 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+ 2          5    23 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+ 3         12    16 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+ 4          4    13 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+ 5          9    23 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+ 6          7    32 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+ 7         13    34 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+ 8          2    28 accuracy multiclass 0.341    10 0.00998 Preprocessor1…     0
+ 9         11    11 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+10         10    30 accuracy multiclass 0.354    10 0.00783 Preprocessor1…     0
+# ℹ 20 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a><span class="co">#40.72 sec elapsed</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The accuracy of all the decision trees are largely around ~35%. This accuracy is very similar to the result of the KNN model which is perhaps worrying especially because I see very similar accuracy results in many of these decision trees. This is perhaps worrying because it is possible that the models are selecting a single or few categories exclusively because the categories are skewed. The best performing decision tree will be fit and plotted to check on this.</p>
+</section>
+<section id="decision-tree-fit" class="level4">
+<h4 class="anchored" data-anchor-id="decision-tree-fit">Decision Tree Fit</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>dtBestParams <span class="ot">&lt;-</span> dtTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select_best</span>(<span class="at">metric =</span> <span class="st">"accuracy"</span>)</span>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a>dtBestWf <span class="ot">&lt;-</span> dtWf <span class="sc">%&gt;%</span></span>
+<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">finalize_workflow</span>(dtBestParams)</span>
+<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a>dtBestFit <span class="ot">&lt;-</span> dtBestWf <span class="sc">%&gt;%</span></span>
+<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The fit was successful and will be used with test data at the end of the report.</p>
+</section>
+<section id="plotting-best-decision-tree" class="level4">
+<h4 class="anchored" data-anchor-id="plotting-best-decision-tree">Plotting Best Decision Tree</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb112"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rpart.plot</span>(dtBestFit <span class="sc">%&gt;%</span> <span class="fu">extract_fit_engine</span>() )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Cannot retrieve the data used to build the model (so cannot determine roundint and is.binary for the variables).
+To silence this warning:
+    Call rpart.plot with roundint=FALSE,
+    or rebuild the rpart model with model=TRUE.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This decision tree does not bother predicting the league index responses of 2, 7, or 8. This could be because they are rarer classes. This is not the end of the world though, because ranks, 1, 3, 4, 5, and 6 are still being predicted with an accuracy of something higher than 35% (because the entries of rank 2, 7 and 8 are automatically falsely predicted). This result might be prompting me to use a different success metric than accuracy. It is possible that log loss would protect from this mistake to some degree. I will try an upsampling technique instead to artificially increase the size of the un-predicted classes. I will attempt this with decision trees now, and then consider doing this for the remaining models as well.</p>
+<p>Otherwise, this best performing decision tree has a tree_depth of 4 and a min_n of 36. It uses only two predictors: ActionLatency and APM. These two predictors were both highly correlated to LeagueIndex so this is fine, though likely there is more than can be predicted. Most importantly though, it tells us that APM and ActionLatency are among, if not, the most important metrics for measuring your performance as a player (outside of game knowledge and strategy). If you are struggling or just trying to improve your rank, then you should monitor your APM and ActionLatency and work on improving both of them.</p>
+</section>
+<section id="decision-tree-with-upsampling" class="level4">
+<h4 class="anchored" data-anchor-id="decision-tree-with-upsampling">Decision Tree with Upsampling</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a>dtSpec <span class="ot">&lt;-</span> <span class="fu">decision_tree</span>(<span class="at">tree_depth=</span><span class="fu">tune</span>(), <span class="at">min_n =</span> <span class="fu">tune</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"rpart"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>)</span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a>dtRec <span class="ot">&lt;-</span>  <span class="fu">recipe</span>(LeagueIndex <span class="sc">~</span> ., <span class="at">data =</span> train) <span class="sc">%&gt;%</span> </span>
+<span id="cb114-6"><a href="#cb114-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(GameID) <span class="sc">%&gt;%</span> </span>
+<span id="cb114-7"><a href="#cb114-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(Age) <span class="sc">%&gt;%</span> </span>
+<span id="cb114-8"><a href="#cb114-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(HoursPerWeek) <span class="sc">%&gt;%</span> </span>
+<span id="cb114-9"><a href="#cb114-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(TotalHours) <span class="sc">%&gt;%</span> </span>
+<span id="cb114-10"><a href="#cb114-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_mutate</span>(<span class="at">LeagueIndex =</span> <span class="fu">as.factor</span>(LeagueIndex)) <span class="sc">%&gt;%</span> </span>
+<span id="cb114-11"><a href="#cb114-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_smote</span>(LeagueIndex)</span>
+<span id="cb114-12"><a href="#cb114-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-13"><a href="#cb114-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-14"><a href="#cb114-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-15"><a href="#cb114-15" aria-hidden="true" tabindex="-1"></a>dtWf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb114-16"><a href="#cb114-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(dtSpec) <span class="sc">%&gt;%</span> </span>
+<span id="cb114-17"><a href="#cb114-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(dtRec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="upsampled-decision-tree-tune" class="level4">
+<h4 class="anchored" data-anchor-id="upsampled-decision-tree-tune">Upsampled Decision Tree Tune</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb115"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a>n_cores <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()</span>
+<span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">makeCluster</span>(n_cores <span class="sc">-</span> <span class="dv">1</span>, <span class="at">type =</span> <span class="st">"PSOCK"</span>)</span>
+<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">tic</span>()</span>
+<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a>dtTuneResults <span class="ot">&lt;-</span> dtWf <span class="sc">%&gt;%</span></span>
+<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tune_bayes</span>(</span>
+<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">resamples =</span> trainFolds,</span>
+<span id="cb115-10"><a href="#cb115-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">metric_set</span>(accuracy),</span>
+<span id="cb115-11"><a href="#cb115-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">initial =</span> <span class="dv">20</span>,</span>
+<span id="cb115-12"><a href="#cb115-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">control =</span> <span class="fu">control_bayes</span>(<span class="at">parallel_over =</span> <span class="st">"everything"</span>)</span>
+<span id="cb115-13"><a href="#cb115-13" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>! No improvement for 10 iterations; returning current results.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>50.9 sec elapsed</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">stopImplicitCluster</span>()</span>
+<span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unregister</span>()</span>
+<span id="cb119-3"><a href="#cb119-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-4"><a href="#cb119-4" aria-hidden="true" tabindex="-1"></a>dtTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect_metrics</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 30 × 9
+   tree_depth min_n .metric  .estimator  mean     n std_err .config        .iter
+        &lt;int&gt; &lt;int&gt; &lt;chr&gt;    &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;          &lt;int&gt;
+ 1          3    30 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+ 2          9    32 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+ 3          9    13 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+ 4          6    40 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+ 5          5    28 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+ 6         10    13 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+ 7         14     9 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+ 8         11    21 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+ 9         12     5 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+10         15    33 accuracy multiclass 0.267    10 0.00674 Preprocessor1…     0
+# ℹ 20 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a><span class="co">#54.27  sec elapsed</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="upsampled-decision-tree-fit" class="level4">
+<h4 class="anchored" data-anchor-id="upsampled-decision-tree-fit">Upsampled Decision Tree Fit</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a>dtBestParams <span class="ot">&lt;-</span> dtTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select_best</span>(<span class="at">metric =</span> <span class="st">"accuracy"</span>)</span>
+<span id="cb122-3"><a href="#cb122-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb122-4"><a href="#cb122-4" aria-hidden="true" tabindex="-1"></a>dtBestWf <span class="ot">&lt;-</span> dtWf <span class="sc">%&gt;%</span></span>
+<span id="cb122-5"><a href="#cb122-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">finalize_workflow</span>(dtBestParams)</span>
+<span id="cb122-6"><a href="#cb122-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb122-7"><a href="#cb122-7" aria-hidden="true" tabindex="-1"></a>dtBestFit <span class="ot">&lt;-</span> dtBestWf <span class="sc">%&gt;%</span></span>
+<span id="cb122-8"><a href="#cb122-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The fit was successful and will be used with test data at the end of the report.</p>
+</section>
+<section id="plotting-best-decision-tree-with-upsampling" class="level4">
+<h4 class="anchored" data-anchor-id="plotting-best-decision-tree-with-upsampling">Plotting Best Decision Tree with Upsampling</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rpart.plot</span>(dtBestFit <span class="sc">%&gt;%</span> <span class="fu">extract_fit_engine</span>() )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Cannot retrieve the data used to build the model (so cannot determine roundint and is.binary for the variables).
+To silence this warning:
+    Call rpart.plot with roundint=FALSE,
+    or rebuild the rpart model with model=TRUE.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: All boxes will be white (the box.palette argument will be ignored) because
+the number of classes in the response 8 is greater than length(box.palette) 6.
+To silence this warning use box.palette=0 or trace=-1.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The upsampling was successful in convincing the model to predict for all 8 classes. Because LeagueIndex 8 is missing any data for Age, TotalHours, and HourPerWeek, I had to remove them to get the smote to work. Around 10% accuracy was lost either to the synthetic data or to the 3 missing predictors. Thankfully, none of these 3 predictors were terribly predictive nor were they helpful to interpret past surface level stuff. Because these 3 (now missing) predictors were not used in the best decision tree before, then I suspect the accuracy loss was mostly a result of the synthetic data. After an internal debate, I have decided to go forward with the synthetic data inflation with the reasoning that predicting classes 7 and 8 is important when looking for metrics that predict high performing players. If the missing predicted classes had been all in between other classes (like 2…it predicted class 1 and 3, so it isn’t terribly worrying) then that might have been fine, but it was missing the two highest ranks. The LeagueIndex response is ordered, so missing the two highest values is unproductive for this report. Total hours is not a very helpful metric to need to improve too. If you are looking for what skill to improve, the result should not be total hours or hours per week anyway because you are already going to play more, you are just looking for what skill to improve. Being told to play more doesn’t help. The Age predictor had barely any correlation to LeagueIndex and it has zero helpful interpretability. If you want to improve your skills, being told to be younger doesn’t help. Therefore the loss of these predictors is not significant nor is it lamentable.</p>
+<p>Looking at this decision tree closer, it uses more metrics than before as well which is noteworthy. ActionLatency and APM still play perhaps the largest roles. Very importantly though, UniqueHotKeys decides the difference between LeagueIndex 7 and 8. And, MinimapAttacks decides the difference between LeagueIndex 6 and 7,8. This is great because the model is now allowing us to interpret the cut-offs between every rank in the game. Again, this is all accounting for ~30% of the actual factors that lead to a player’s rank, but these are still very helpful metrics to look at when climbing the ranks. A decision tree like this also informs you what metric you should look at depending on which rank you are in, and what metrics you already perform at. And if this decision tree determines you should be in a higher rank than you are in, then you are likely missing game knowledge or strategy. And if this tree determines you should be in a lower rank than you are in, then you are likely over-performing with game knowledge or strategy, while under-performing with these more technical skills. So no matter the situation, a decision tree like this can provide valuable information.</p>
+</section>
+</section>
+<section id="random-forest-model" class="level3">
+<h3 class="anchored" data-anchor-id="random-forest-model">Random Forest Model</h3>
+<section id="random-forest-setup" class="level4">
+<h4 class="anchored" data-anchor-id="random-forest-setup">Random Forest Setup</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb126"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a>rfSpec <span class="ot">&lt;-</span> <span class="fu">rand_forest</span>(<span class="at">trees =</span> <span class="fu">tune</span>(), <span class="at">min_n =</span> <span class="fu">tune</span>()) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-2"><a href="#cb126-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set_engine</span>(<span class="st">"ranger"</span>, <span class="at">importance =</span> <span class="st">"impurity"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-3"><a href="#cb126-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set_mode</span>(<span class="st">"classification"</span>)</span>
+<span id="cb126-4"><a href="#cb126-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-5"><a href="#cb126-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-6"><a href="#cb126-6" aria-hidden="true" tabindex="-1"></a>rfRec <span class="ot">&lt;-</span>  <span class="fu">recipe</span>(LeagueIndex <span class="sc">~</span> ., <span class="at">data =</span> train) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-7"><a href="#cb126-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(GameID) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-8"><a href="#cb126-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(Age) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-9"><a href="#cb126-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(HoursPerWeek) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-10"><a href="#cb126-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(TotalHours) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-11"><a href="#cb126-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_mutate</span>(<span class="at">LeagueIndex =</span> <span class="fu">as.factor</span>(LeagueIndex)) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-12"><a href="#cb126-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_smote</span>(LeagueIndex)</span>
+<span id="cb126-13"><a href="#cb126-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-14"><a href="#cb126-14" aria-hidden="true" tabindex="-1"></a>rfWf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb126-15"><a href="#cb126-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(rfSpec) <span class="sc">%&gt;%</span> </span>
+<span id="cb126-16"><a href="#cb126-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(rfRec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>For the Random Forest model, the “trees” and “min_n” hyperparameters are being tuned. All predictors are used to attempt to predict LeagueIndex. GameId is removed because it is not predictive, it is a label. In the specification, the predictor importance is being tracked so that predictor-level analysis is possible. 20 initial hyperparameter combinations are being used and Bayesian Optimization explores the hyperparamter space further to look for even more optimal solutions. Upsampling is used to balance the classes and encourage the model to predict every class.</p>
+</section>
+<section id="random-forest-tune" class="level4">
+<h4 class="anchored" data-anchor-id="random-forest-tune">Random Forest Tune</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb127"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb127-1"><a href="#cb127-1" aria-hidden="true" tabindex="-1"></a>n_cores <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()</span>
+<span id="cb127-2"><a href="#cb127-2" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">makeCluster</span>(n_cores <span class="sc">-</span> <span class="dv">1</span>, <span class="at">type =</span> <span class="st">"PSOCK"</span>)</span>
+<span id="cb127-3"><a href="#cb127-3" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb127-4"><a href="#cb127-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb127-5"><a href="#cb127-5" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">tic</span>()</span>
+<span id="cb127-6"><a href="#cb127-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb127-7"><a href="#cb127-7" aria-hidden="true" tabindex="-1"></a>rfTuneResults <span class="ot">&lt;-</span> rfWf <span class="sc">%&gt;%</span></span>
+<span id="cb127-8"><a href="#cb127-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tune_bayes</span>(</span>
+<span id="cb127-9"><a href="#cb127-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">resamples =</span> trainFolds,</span>
+<span id="cb127-10"><a href="#cb127-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">metric_set</span>(accuracy),</span>
+<span id="cb127-11"><a href="#cb127-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">initial =</span> <span class="dv">20</span>,  <span class="co">#make this bigger after it works</span></span>
+<span id="cb127-12"><a href="#cb127-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">control =</span> <span class="fu">control_bayes</span>(<span class="at">parallel_over =</span> <span class="st">"everything"</span>)</span>
+<span id="cb127-13"><a href="#cb127-13" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>! No improvement for 10 iterations; returning current results.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb129"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb129-1"><a href="#cb129-1" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>361.62 sec elapsed</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb131"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb131-1"><a href="#cb131-1" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">stopImplicitCluster</span>()</span>
+<span id="cb131-2"><a href="#cb131-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unregister</span>()</span>
+<span id="cb131-3"><a href="#cb131-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-4"><a href="#cb131-4" aria-hidden="true" tabindex="-1"></a>rfTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb131-5"><a href="#cb131-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect_metrics</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 30 × 9
+   trees min_n .metric  .estimator  mean     n std_err .config             .iter
+   &lt;int&gt; &lt;int&gt; &lt;chr&gt;    &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;               &lt;int&gt;
+ 1  1978     2 accuracy multiclass 0.365    10 0.00909 Preprocessor1_Mode…     0
+ 2   518    20 accuracy multiclass 0.360    10 0.0101  Preprocessor1_Mode…     0
+ 3  1063    33 accuracy multiclass 0.368    10 0.0110  Preprocessor1_Mode…     0
+ 4  1164    24 accuracy multiclass 0.366    10 0.0101  Preprocessor1_Mode…     0
+ 5  1825    22 accuracy multiclass 0.366    10 0.00856 Preprocessor1_Mode…     0
+ 6  1631    26 accuracy multiclass 0.364    10 0.00958 Preprocessor1_Mode…     0
+ 7   778    12 accuracy multiclass 0.367    10 0.00922 Preprocessor1_Mode…     0
+ 8   145    19 accuracy multiclass 0.364    10 0.0124  Preprocessor1_Mode…     0
+ 9  1468    37 accuracy multiclass 0.364    10 0.00985 Preprocessor1_Mode…     0
+10   888    15 accuracy multiclass 0.366    10 0.00984 Preprocessor1_Mode…     0
+# ℹ 20 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb133"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a><span class="co">#340.81 sec elapsed</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The random forest models seems to have around ~35% accuracy which is a great improvement. The best one got ~37.2% accuracy. Again, this makes sense because much of the game is decided by strategy and game knowledge and we have no metrics for those factors at all. The highest performing random forest had 243 trees and a min_n of 5.</p>
+</section>
+<section id="random-forest-fit" class="level4">
+<h4 class="anchored" data-anchor-id="random-forest-fit">Random Forest Fit</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb134"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb134-1"><a href="#cb134-1" aria-hidden="true" tabindex="-1"></a>rfBestParams <span class="ot">&lt;-</span> rfTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb134-2"><a href="#cb134-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select_best</span>(<span class="at">metric =</span> <span class="st">"accuracy"</span>)</span>
+<span id="cb134-3"><a href="#cb134-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb134-4"><a href="#cb134-4" aria-hidden="true" tabindex="-1"></a>rfBestWf <span class="ot">&lt;-</span> rfWf <span class="sc">%&gt;%</span></span>
+<span id="cb134-5"><a href="#cb134-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">finalize_workflow</span>(rfBestParams)</span>
+<span id="cb134-6"><a href="#cb134-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb134-7"><a href="#cb134-7" aria-hidden="true" tabindex="-1"></a>rfBestFit <span class="ot">&lt;-</span> rfBestWf <span class="sc">%&gt;%</span></span>
+<span id="cb134-8"><a href="#cb134-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="random-forest-variable-importance" class="level4">
+<h4 class="anchored" data-anchor-id="random-forest-variable-importance">Random Forest Variable Importance</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a>rfBestFit <span class="sc">%&gt;%</span> </span>
+<span id="cb135-2"><a href="#cb135-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">extract_fit_parsnip</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb135-3"><a href="#cb135-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">vip</span>(<span class="at">num_features =</span> <span class="dv">20</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This variable importance graphic tells us that APM and ActionLatency were chosen most often within the trees. This tells us that these two predictors contribute the most to what LeagueIndex a set of metrics is from. In context, this tells us that APM and ActionLatency are likely the most important metrics to monitor while improving your skill.</p>
+<p>SelectByHotkey, GapBetweenPACs and NumberOfPACs are following a bit further behind but are clearly still predictive. It is likely, according to the decision tree above, that these metrics are deciding factors further into the tree. The APM and ActionLatency make the most progress and then these three predictors fill in the gaps.</p>
+</section>
+</section>
+<section id="xgboost-model" class="level3">
+<h3 class="anchored" data-anchor-id="xgboost-model">XgBoost Model</h3>
+<section id="xgboost-setup" class="level4">
+<h4 class="anchored" data-anchor-id="xgboost-setup">XgBoost setup</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb136"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>xgbSpec <span class="ot">&lt;-</span> <span class="fu">boost_tree</span>(</span>
+<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">trees =</span> <span class="fu">tune</span>(), </span>
+<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">learn_rate =</span> <span class="fu">tune</span>(), </span>
+<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">tree_depth =</span> <span class="fu">tune</span>(), </span>
+<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">loss_reduction =</span> <span class="fu">tune</span>(), </span>
+<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">sample_size =</span> <span class="fu">tune</span>()</span>
+<span id="cb136-7"><a href="#cb136-7" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb136-8"><a href="#cb136-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"xgboost"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb136-9"><a href="#cb136-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>)</span>
+<span id="cb136-10"><a href="#cb136-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-11"><a href="#cb136-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-12"><a href="#cb136-12" aria-hidden="true" tabindex="-1"></a>xgbRec <span class="ot">&lt;-</span> <span class="fu">recipe</span>(LeagueIndex <span class="sc">~</span> ., <span class="at">data =</span> train) <span class="sc">%&gt;%</span> </span>
+<span id="cb136-13"><a href="#cb136-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(GameID) <span class="sc">%&gt;%</span></span>
+<span id="cb136-14"><a href="#cb136-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(Age) <span class="sc">%&gt;%</span> </span>
+<span id="cb136-15"><a href="#cb136-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(HoursPerWeek) <span class="sc">%&gt;%</span> </span>
+<span id="cb136-16"><a href="#cb136-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_rm</span>(TotalHours) <span class="sc">%&gt;%</span> </span>
+<span id="cb136-17"><a href="#cb136-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_mutate</span>(<span class="at">LeagueIndex =</span> <span class="fu">as.factor</span>(LeagueIndex)) <span class="sc">%&gt;%</span> </span>
+<span id="cb136-18"><a href="#cb136-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_smote</span>(LeagueIndex)</span>
+<span id="cb136-19"><a href="#cb136-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb136-20"><a href="#cb136-20" aria-hidden="true" tabindex="-1"></a>xgbWf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb136-21"><a href="#cb136-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(xgbSpec) <span class="sc">%&gt;%</span></span>
+<span id="cb136-22"><a href="#cb136-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(xgbRec)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>For the XgBoost model, the “trees”, “learn_rate”, “loss_reduction”, and “sample_size” hyperparameters are being tuned. All predictors are used to attempt to predict LeagueIndex. GameId is removed because it is not predictive, it is a label. 20 initial hyperparameter combinations are being used and Bayesian Optimization explores the hyperparamter space further to look for even more optimal solutions. Upsampling is used to balance the classes to encourage the model to predict every class.</p>
+</section>
+<section id="xgboost-tune" class="level4">
+<h4 class="anchored" data-anchor-id="xgboost-tune">XgBoost Tune</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a>n_cores <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>()</span>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>cl <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">makeCluster</span>(n_cores <span class="sc">-</span> <span class="dv">1</span>, <span class="at">type =</span> <span class="st">"PSOCK"</span>)</span>
+<span id="cb137-3"><a href="#cb137-3" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">registerDoParallel</span>(cl)</span>
+<span id="cb137-4"><a href="#cb137-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-5"><a href="#cb137-5" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">tic</span>()</span>
+<span id="cb137-6"><a href="#cb137-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb137-7"><a href="#cb137-7" aria-hidden="true" tabindex="-1"></a>xgbTuneResults <span class="ot">&lt;-</span> xgbWf <span class="sc">%&gt;%</span></span>
+<span id="cb137-8"><a href="#cb137-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tune_bayes</span>(</span>
+<span id="cb137-9"><a href="#cb137-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">resamples =</span> trainFolds,</span>
+<span id="cb137-10"><a href="#cb137-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">metric_set</span>(accuracy),</span>
+<span id="cb137-11"><a href="#cb137-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">initial =</span> <span class="dv">20</span>,  <span class="co">#make this bigger after it works</span></span>
+<span id="cb137-12"><a href="#cb137-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">control =</span> <span class="fu">control_bayes</span>(<span class="at">parallel_over =</span> <span class="st">"everything"</span>)</span>
+<span id="cb137-13"><a href="#cb137-13" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>! No improvement for 10 iterations; returning current results.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">toc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2527.76 sec elapsed</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb141"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a>doParallel<span class="sc">::</span><span class="fu">stopImplicitCluster</span>()</span>
+<span id="cb141-2"><a href="#cb141-2" aria-hidden="true" tabindex="-1"></a><span class="fu">unregister</span>()</span>
+<span id="cb141-3"><a href="#cb141-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb141-4"><a href="#cb141-4" aria-hidden="true" tabindex="-1"></a>xgbTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb141-5"><a href="#cb141-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">collect_metrics</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 30 × 12
+   trees tree_depth learn_rate loss_reduction sample_size .metric  .estimator
+   &lt;int&gt;      &lt;int&gt;      &lt;dbl&gt;          &lt;dbl&gt;       &lt;dbl&gt; &lt;chr&gt;    &lt;chr&gt;     
+ 1  1092          2    0.0277        2.92e+ 1       0.175 accuracy multiclass
+ 2  1882          2    0.0534        3.99e-10       0.820 accuracy multiclass
+ 3  1795          3    0.0114        5.48e- 6       0.244 accuracy multiclass
+ 4  1926          3    0.0194        1.05e- 3       0.345 accuracy multiclass
+ 5  1306          4    0.304         1.77e- 1       0.847 accuracy multiclass
+ 6   566          5    0.0152        3.64e- 3       0.658 accuracy multiclass
+ 7   843          6    0.00155       2.52e- 5       0.427 accuracy multiclass
+ 8  1200          6    0.196         1.05e-10       0.769 accuracy multiclass
+ 9   729          7    0.00248       1.79e- 6       0.308 accuracy multiclass
+10   933          8    0.0327        2.36e- 4       0.119 accuracy multiclass
+# ℹ 20 more rows
+# ℹ 5 more variables: mean &lt;dbl&gt;, n &lt;int&gt;, std_err &lt;dbl&gt;, .config &lt;chr&gt;,
+#   .iter &lt;int&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb143"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1" aria-hidden="true" tabindex="-1"></a><span class="co">#2462.24 sec elapsed</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The best xgboost model had an accuracy of ~36.5% which is about a percent less than the random forest model. It is possible this accuracy difference is negligible, but at the very least it is reinforcing that this dataset is not telling the full story by itself, which again, makes sense. The tree had a tree depth of 5, 566 trees, a learn rate of 0.015233323, a loss reduction of 3.644356e-03 and a sample size of 0.6583793.</p>
+</section>
+<section id="xgboost-fit" class="level4">
+<h4 class="anchored" data-anchor-id="xgboost-fit">Xgboost Fit</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb144"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb144-1"><a href="#cb144-1" aria-hidden="true" tabindex="-1"></a>xgbBestParams <span class="ot">&lt;-</span> xgbTuneResults <span class="sc">%&gt;%</span></span>
+<span id="cb144-2"><a href="#cb144-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select_best</span>(<span class="at">metric =</span> <span class="st">"accuracy"</span>)</span>
+<span id="cb144-3"><a href="#cb144-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb144-4"><a href="#cb144-4" aria-hidden="true" tabindex="-1"></a>xgbBestWf <span class="ot">&lt;-</span> xgbWf <span class="sc">%&gt;%</span></span>
+<span id="cb144-5"><a href="#cb144-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">finalize_workflow</span>(xgbBestParams)</span>
+<span id="cb144-6"><a href="#cb144-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb144-7"><a href="#cb144-7" aria-hidden="true" tabindex="-1"></a>xgbBestFit <span class="ot">&lt;-</span> xgbBestWf <span class="sc">%&gt;%</span></span>
+<span id="cb144-8"><a href="#cb144-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit</span>(train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="xgboost-variable-importance" class="level4">
+<h4 class="anchored" data-anchor-id="xgboost-variable-importance">Xgboost Variable Importance</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb145"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1" aria-hidden="true" tabindex="-1"></a>xgbModel <span class="ot">&lt;-</span> <span class="fu">extract_fit_parsnip</span>(xgbBestFit)<span class="sc">$</span>fit</span>
+<span id="cb145-2"><a href="#cb145-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-3"><a href="#cb145-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-4"><a href="#cb145-4" aria-hidden="true" tabindex="-1"></a>importance <span class="ot">&lt;-</span> <span class="fu">xgb.importance</span>(<span class="at">model =</span> xgbModel)</span>
+<span id="cb145-5"><a href="#cb145-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-6"><a href="#cb145-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(importance)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 Feature       Gain      Cover  Frequency
+                  &lt;char&gt;      &lt;num&gt;      &lt;num&gt;      &lt;num&gt;
+ 1:                  APM 0.24512777 0.13021926 0.08243947
+ 2:        ActionLatency 0.19974212 0.14282686 0.08700242
+ 3:       MinimapAttacks 0.06321314 0.07023488 0.07271768
+ 4:       GapBetweenPACs 0.05901976 0.08292503 0.08839854
+ 5:      SelectByHotkeys 0.05821123 0.07427731 0.07236013
+ 6:      AssignToHotkeys 0.05636147 0.07540470 0.07837028
+ 7:        UniqueHotkeys 0.04637452 0.05018847 0.05291654
+ 8:   MinimapRightClicks 0.04613770 0.05011083 0.07940886
+ 9:          WorkersMade 0.04223175 0.06014884 0.07229203
+10:         ActionsInPAC 0.03646119 0.04844596 0.06703102
+11:      UniqueUnitsMade 0.03568613 0.05115353 0.05007321
+12:         NumberOfPACs 0.03452305 0.06156683 0.06027173
+13:     TotalMapExplored 0.03298878 0.03993622 0.06016958
+14: ComplexAbilitiesUsed 0.02673298 0.03318508 0.04707665
+15:     ComplexUnitsMade 0.01718840 0.02937620 0.02947186</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb147"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1" aria-hidden="true" tabindex="-1"></a><span class="fu">xgb.plot.importance</span>(importance)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="FinalProj_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>So again, it is reinforced that APM and ActionLatency are the most important predictors. Here, the variable importance is done differently, but I suspect the predictors serve the exact same purpose as they did in the random forest and the decision tree: that is that the APM and ActionLatency do a lot of heavy lifting at the beginning, and then stuff like MinimapAttacks, GapBetweenPACs, and SelectByHotkeys fill in the details. So the most gain is from APM and ActionLatency, but once those are settled, it is the other predictors that make the rest of the difference.</p>
+<p>Notably as well, both here and before, the ComplexUnitsMade predictor performed the worst, with the ComplexAbilitiesUsed being better but still second worst. So it does not matter if you are using the complex units or using their abilities. You can succeed without using those units or at least using less of them.</p>
+</section>
+</section>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>Because the intention of this report was not to predict the LeagueIndex of new player data, it can be said to be a success. The models created would not perform well to predict the LeagueIndex of new data, and nor should it. If it did, it would suggest that game knowledge and strategy do not play a large part of what rank a player is in, which would be alarming. With more intensive tuning, the accuracy would surely go up a bit more, but I am unsure the limit. Whatever that limit is, it can be considered the amount that game knowledge, strategy, hours played, and luck contribute to a player’s rank in Starcraft 2. From the models created here, that limit is likely around 60%. What this report confirms, is that, in conjuction with the missing factors, around 40% of the reason for a player’s rank are these metrics here, all of which can be recorded automatically while playing. 40% is not a small amount, and these metrics are all measurable and measurably improvable.</p>
+<p>So, if you are playing Starcraft 2, and you intend to climb the ranks, you should track these metrics paying special attention to APM and ActionLatency. You should see what you can do to improve these skills, which mostly includes thinking faster and acting faster. Most importantly though, you should match your values of these metrics to those in the decision tree and then, if you get the rank you are in, you should look at what would put you in the next rank up. For the lower ranks, it is likely the case that you just need to improve APM and ActionLatency, but going into the 6,7,8 ranks, you may need to switch your focus to MinimapAttacks, GapBetweenPACs, SelectByHotkeys, or AssignToHotkeys. And if you improve these values, but do not improve rank, then you need to focus on game knowledge and game strategy. In that case you should learn some playstyles and playstyle counters.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -499,18 +499,6 @@ Strangely, tripling the initial points took the same amount of time to run. The 
 #| eval: false
 
 
-knn_best_params <- knn_tune_results %>%
-  select_best(metric = "mn_log_loss")
-
-knn_best_wf <- knn_wf %>%
-  finalize_workflow(knn_best_params)
-
-knn_best_fit <- knn_best_wf %>%
-  fit(train)
-
-
-knn_best_fit %>% 
-  extract_fit_engine()
 
 ```
 The model was fit successfully. 
@@ -640,19 +628,6 @@ The plotted decision tree is encouraging because it does not seem superficial at
 
 
 
-
-submission_knn <- knn_best_fit %>% 
-  augment(comp) %>% 
-  rename(
-    prob_A = ".pred_0-250000",
-    prob_B = ".pred_250000-350000",
-    prob_C = ".pred_350000-450000",
-    prob_D = ".pred_450000-650000",
-    prob_E = ".pred_650000+"
-  ) %>% 
-  select(id, starts_with ("prob"))
-
-write.csv(submission_knn, "knn_submission.csv", row.names = FALSE)
 
 
 
